@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
-
 export default function Home() {
-  redirect("/e/test-event/members");
+  return (
+    <html>
+      <head>
+        <meta httpEquiv="refresh" content="0;url=/e/test-event/members" />
+      </head>
+      <body></body>
+    </html>
+  );
 }
