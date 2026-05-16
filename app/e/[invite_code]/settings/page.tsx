@@ -63,12 +63,12 @@ export default function SettingsPage() {
           href={`/e/${inviteCode}/members`}
           className="p-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-100 transition-colors"
         >
-          <ArrowLeft size={18} className="text-gray-700" />
+          <ArrowLeft size={18} className="text-gray-900" />
         </Link>
         <h1 className="flex-1 text-sm font-bold text-gray-900">プロフィール</h1>
         <Link
           href={`/e/${inviteCode}/settings/edit`}
-          className="px-3 py-1.5 rounded-full border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 rounded-full border border-gray-300 text-xs font-semibold text-gray-900 hover:bg-gray-50 active:bg-gray-50 transition-colors"
         >
           編集
         </Link>
@@ -77,17 +77,17 @@ export default function SettingsPage() {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <p className="text-sm text-gray-400 text-center py-12">読み込み中...</p>
+          <p className="text-sm text-gray-900 text-center py-12">読み込み中...</p>
         ) : (
           <>
             {/* Cover */}
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200" style={{ height: "100px" }} />
+            <div className="bg-gradient-to-r from-gray-800 to-gray-600" style={{ height: "100px" }} />
 
             {/* Avatar */}
             <div className="px-4">
               <div
                 className={`w-[72px] h-[72px] rounded-full flex items-center justify-center text-2xl font-bold border-4 border-white -mt-9 ${
-                  profile.name ? "bg-indigo-500 text-white" : "bg-gray-200 text-gray-400"
+                  profile.name ? "bg-indigo-500 text-white" : "bg-gray-400 text-white"
                 }`}
               >
                 {profile.name ? profile.name[0] : "?"}
@@ -98,10 +98,10 @@ export default function SettingsPage() {
             <div className="px-4 pt-3 pb-6 flex flex-col gap-5">
               {/* Name + work_context */}
               <div className="flex flex-col gap-1.5">
-                <h2 className={`text-lg font-bold leading-snug ${profile.name ? "text-gray-900" : "text-gray-400"}`}>
+                <h2 className="text-lg font-bold text-gray-900 leading-snug">
                   {profile.name || "名前未設定"}
                 </h2>
-                <p className={`text-sm leading-relaxed ${profile.work_context ? "text-gray-600" : "text-gray-400"}`}>
+                <p className="text-sm text-gray-900 leading-relaxed">
                   {profile.work_context || "仕事・活動内容未設定"}
                 </p>
               </div>
@@ -110,23 +110,23 @@ export default function SettingsPage() {
 
               {/* Life stage */}
               <div className="flex flex-col gap-2">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="text-[10px] font-semibold text-gray-900 uppercase tracking-wider">
                   ライフステージ
                 </p>
                 {profile.life_stage ? (
                   <div>
-                    <span className="px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-600">
+                    <span className="px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-900">
                       {profile.life_stage}
                     </span>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">未設定</p>
+                  <p className="text-xs text-gray-900">未設定</p>
                 )}
               </div>
 
               {/* Worries */}
               <div className="flex flex-col gap-2">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="text-[10px] font-semibold text-gray-900 uppercase tracking-wider">
                   最近の悩み
                 </p>
                 {profile.worries.length > 0 ? (
@@ -141,13 +141,13 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">未設定</p>
+                  <p className="text-xs text-gray-900">未設定</p>
                 )}
               </div>
 
               {/* Values */}
               <div className="flex flex-col gap-2">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="text-[10px] font-semibold text-gray-900 uppercase tracking-wider">
                   価値観
                 </p>
                 {profile.values.length > 0 ? (
@@ -162,7 +162,7 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">未設定</p>
+                  <p className="text-xs text-gray-900">未設定</p>
                 )}
               </div>
 

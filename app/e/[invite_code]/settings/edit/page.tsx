@@ -121,7 +121,7 @@ export default function SettingsEditPage() {
           href={`/e/${inviteCode}/settings`}
           className="p-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-100 transition-colors"
         >
-          <ArrowLeft size={18} className="text-gray-700" />
+          <ArrowLeft size={18} className="text-gray-900" />
         </Link>
         <h1 className="text-sm font-bold text-gray-900">プロフィール編集</h1>
       </div>
@@ -129,18 +129,18 @@ export default function SettingsEditPage() {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-6">
         {isLoading ? (
-          <p className="text-sm text-gray-400 text-center py-8">読み込み中...</p>
+          <p className="text-sm text-gray-900 text-center py-8">読み込み中...</p>
         ) : (
           <>
             {/* Profile section */}
             <section>
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              <h2 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-3">
                 プロフィール
               </h2>
               <div className="flex flex-col gap-3">
                 {/* Name */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">名前</label>
+                  <label className="text-xs font-medium text-gray-900 mb-1 block">名前</label>
                   <input
                     type="text"
                     value={profile.name}
@@ -152,7 +152,7 @@ export default function SettingsEditPage() {
 
                 {/* Life stage */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-2 block">ライフステージ</label>
+                  <label className="text-xs font-medium text-gray-900 mb-2 block">ライフステージ</label>
                   <div className="flex flex-wrap gap-2">
                     {LIFE_STAGES.map((s) => (
                       <button
@@ -162,7 +162,7 @@ export default function SettingsEditPage() {
                         className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
                           profile.life_stage === s
                             ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-200 text-gray-600"
+                            : "border-gray-200 text-gray-900"
                         }`}
                       >
                         {s}
@@ -173,7 +173,7 @@ export default function SettingsEditPage() {
 
                 {/* Work context */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">仕事・活動内容</label>
+                  <label className="text-xs font-medium text-gray-900 mb-1 block">仕事・活動内容</label>
                   <input
                     type="text"
                     value={profile.work_context}
@@ -185,7 +185,7 @@ export default function SettingsEditPage() {
 
                 {/* Worries */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-2 block">最近の悩み</label>
+                  <label className="text-xs font-medium text-gray-900 mb-2 block">最近の悩み</label>
                   <div className="flex flex-wrap gap-2">
                     {WORRIES_OPTIONS.map((w) => (
                       <button
@@ -195,7 +195,7 @@ export default function SettingsEditPage() {
                         className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
                           profile.worries.includes(w)
                             ? "bg-orange-100 text-orange-700 border-orange-200"
-                            : "border-gray-200 text-gray-600"
+                            : "border-gray-200 text-gray-900"
                         }`}
                       >
                         {w}
@@ -206,7 +206,7 @@ export default function SettingsEditPage() {
 
                 {/* Values */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-2 block">大切にしている価値観</label>
+                  <label className="text-xs font-medium text-gray-900 mb-2 block">大切にしている価値観</label>
                   <div className="flex flex-wrap gap-2">
                     {VALUES_OPTIONS.map((v) => (
                       <button
@@ -216,7 +216,7 @@ export default function SettingsEditPage() {
                         className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
                           profile.values.includes(v)
                             ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-200 text-gray-600"
+                            : "border-gray-200 text-gray-900"
                         }`}
                       >
                         {v}
@@ -232,13 +232,13 @@ export default function SettingsEditPage() {
 
             {/* Notification section */}
             <section>
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              <h2 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-3">
                 通知
               </h2>
               <div className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2.5">
-                  <Bell size={16} className="text-gray-500" />
-                  <span className="text-sm text-gray-800">プッシュ通知</span>
+                  <Bell size={16} className="text-gray-900" />
+                  <span className="text-sm text-gray-900">プッシュ通知</span>
                 </div>
                 <Toggle checked={notifEnabled} onChange={setNotifEnabled} />
               </div>
