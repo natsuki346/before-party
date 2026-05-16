@@ -7,6 +7,14 @@ import type { Event, ParticipantWithProfile } from "@/lib/supabase/types";
 import RoomSelection from "./RoomSelection";
 import { useSidebar } from "../SidebarContext";
 
+function getMatchColor(score: number): string {
+  if (score >= 80) return "#ef4444";
+  if (score >= 60) return "#f97316";
+  if (score >= 40) return "#eab308";
+  if (score >= 20) return "#3b82f6";
+  return "#6366f1";
+}
+
 function calcScore(mine: ParticipantWithProfile, other: ParticipantWithProfile): number {
   const mp = mine.profiles;
   const op = other.profiles;
@@ -153,6 +161,8 @@ export default function MembersList({
   if (!card)
     return emptyScreen("🎉", "全員チェック済み！", "全員のプロフィールを確認しました。");
 
+  const matchColor = getMatchColor(card.score);
+
   const translateX = flyOut ? (flyOut === "right" ? 700 : -700) : dragX;
   const rotate = flyOut ? (flyOut === "right" ? 25 : -25) : dragX * 0.04;
 
@@ -279,7 +289,7 @@ export default function MembersList({
           onMouseUp={() => { setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
           onMouseLeave={() => { if (!isDragging) return; setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
         >
-          <div className="w-full h-full bg-white rounded-2xl shadow-xl overflow-hidden relative">
+          <div className="w-full h-full bg-white rounded-2xl shadow-xl overflow-hidden relative" style={{ borderLeft: `4px solid ${matchColor}` }}>
 
             {/* LIKE overlay */}
             <div
@@ -317,10 +327,10 @@ export default function MembersList({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[11px] text-gray-500 font-medium">マッチ度</span>
-                  <span className="text-[11px] font-bold text-emerald-600">85%</span>
+                  <span className="text-[11px] font-bold" style={{ color: matchColor }}>85%</span>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: "85%" }} />
+                  <div className="h-full rounded-full" style={{ width: "85%", backgroundColor: matchColor }} />
                 </div>
               </div>
 
