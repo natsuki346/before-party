@@ -24,7 +24,7 @@ function NamePrompt({
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && name.trim() && onSave(name)}
         autoFocus
-        className="flex-1 bg-white border border-yellow-300 rounded-lg px-3 py-1.5 text-sm outline-none"
+        className="flex-1 bg-white border border-yellow-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
       />
       <button
         onClick={() => name.trim() && onSave(name)}
@@ -239,7 +239,7 @@ export default function ChatRoom({
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
           placeholder={senderName ? "メッセージを入力" : "名前を設定して送信できます"}
-          className="flex-1 bg-gray-100 rounded-2xl px-4 py-2.5 text-sm outline-none placeholder:text-gray-400"
+          className="flex-1 bg-white border border-gray-200 rounded-2xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
         />
         <button
           onClick={send}
