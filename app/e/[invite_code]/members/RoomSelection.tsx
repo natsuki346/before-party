@@ -211,8 +211,26 @@ export default function RoomSelection({
   const [isOpening, setIsOpening]   = useState(false);
   const [showWhite, setShowWhite]   = useState(false);
   const startX = useRef(0);
+  const mouseStartX = useRef(0);
+  const isMouseDown = useRef(false);
 
   const translateX = -(roomIdx * STEP) + dragX;
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (isOpening) return;
+    isMouseDown.current = true;
+    mouseStartX.current = e.clientX;
+  };
+
+  const onMouseUp = (e: React.MouseEvent) => {
+    if (!isMouseDown.current) return;
+    isMouseDown.current = false;
+    const d = e.clientX - mouseStartX.current;
+    if      (d < -50 && roomIdx < ROOMS.length - 1) setRoomIdx((i) => i + 1);
+    else if (d >  50 && roomIdx > 0)                setRoomIdx((i) => i - 1);
+  };
+
+  const onMouseLeave = () => { isMouseDown.current = false; };
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (isOpening) return;
@@ -297,9 +315,13 @@ export default function RoomSelection({
       {/* Carousel */}
       <div
         className="flex-1 flex items-center overflow-hidden"
+        style={{ cursor: "grab" }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseLeave}
       >
         <div
           style={{
