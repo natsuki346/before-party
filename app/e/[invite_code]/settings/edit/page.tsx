@@ -3,21 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Bell, Check } from "lucide-react";
+import { ArrowLeft, Bell, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+// ─── Tag categories (excluding work_context which uses WORK_CATEGORIES) ───────
 const TAG_CATEGORIES = [
   {
     label: "ライフステージ",
     key: "life_stage" as const,
     multi: false,
     tags: ["学生", "社会人（会社員）", "フリーランス", "起業家", "その他"],
-  },
-  {
-    label: "仕事・職種",
-    key: "work_context" as const,
-    multi: false,
-    tags: ["エンジニア", "デザイナー", "マーケター", "営業", "経営者", "研究・教育", "医療・福祉", "クリエイター", "その他"],
   },
   {
     label: "悩み",
@@ -33,9 +28,56 @@ const TAG_CATEGORIES = [
   },
 ];
 
-const ALL_TAB = "すべて";
+// ─── 3-tier work categories ───────────────────────────────────────────────────
+const WORK_CATEGORIES = [
+  {
+    label: "IT・テック",
+    jobs: [
+      { label: "エンジニア", details: ["フロントエンド", "バックエンド", "モバイル", "AI・ML", "インフラ・SRE", "フルスタック"] },
+      { label: "デザイナー", details: ["UIデザイン", "グラフィック", "プロダクトデザイン", "UXリサーチ"] },
+      { label: "PM・PdM", details: ["プロダクトマネージャー", "プロジェクトマネージャー"] },
+      { label: "データ・AI", details: ["データアナリスト", "データサイエンティスト", "MLエンジニア"] },
+    ],
+  },
+  {
+    label: "ビジネス",
+    jobs: [
+      { label: "営業", details: ["法人営業", "個人営業", "インサイドセールス", "カスタマーサクセス"] },
+      { label: "マーケター", details: ["デジタルマーケ", "コンテンツマーケ", "ブランドマーケ", "グロースハック"] },
+      { label: "経営・起業", details: ["CEO・創業者", "COO", "事業開発", "スタートアップ"] },
+      { label: "コンサル・金融", details: ["経営コンサル", "ITコンサル", "投資・VC", "会計・税務"] },
+    ],
+  },
+  {
+    label: "クリエイティブ",
+    jobs: [
+      { label: "クリエイター", details: ["動画・映像", "写真", "イラスト", "音楽"] },
+      { label: "ライター", details: ["Webライター", "コピーライター", "編集者"] },
+      { label: "アーティスト", details: ["グラフィックアート", "インスタレーション", "パフォーマンス"] },
+    ],
+  },
+  {
+    label: "医療・教育",
+    jobs: [
+      { label: "医療・福祉", details: ["医師・看護師", "薬剤師", "福祉・介護", "心理・カウンセラー"] },
+      { label: "教育・研究", details: ["教師・講師", "大学・研究者", "塾・家庭教師", "EdTech"] },
+    ],
+  },
+  {
+    label: "その他",
+    jobs: [
+      { label: "フリーランス", details: ["複業・副業", "ノマドワーカー"] },
+      { label: "学生", details: ["大学生", "大学院生", "専門学生"] },
+      { label: "その他", details: ["その他"] },
+    ],
+  },
+];
 
-type ProfileKey = "life_stage" | "work_context" | "worries" | "values";
+const ALL_TAB = "すべて";
+const WORK_TAB = "仕事・職種";
+const TABS = [ALL_TAB, "ライフステージ", WORK_TAB, "悩み", "価値観"];
+
+type ProfileKey = "life_stage" | "worries" | "values";
 
 type Profile = {
   name: string;
@@ -79,6 +121,8 @@ export default function SettingsEditPage() {
     values: [],
   });
   const [activeTab, setActiveTab] = useState(ALL_TAB);
+  const [workCategoryIdx, setWorkCategoryIdx] = useState(0);
+  const [openJob, setOpenJob] = useState<string | null>(null);
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,16 +154,25 @@ export default function SettingsEditPage() {
     })();
   }, [inviteCode]);
 
+  // work_context stored as comma-separated detail labels
+  const selectedWorkDetails = profile.work_context
+    ? profile.work_context.split(", ").filter(Boolean)
+    : [];
+
+  const toggleWorkDetail = (detail: string) => {
+    const updated = selectedWorkDetails.includes(detail)
+      ? selectedWorkDetails.filter((d) => d !== detail)
+      : [...selectedWorkDetails, detail];
+    setProfile((p) => ({ ...p, work_context: updated.join(", ") }));
+  };
+
   const handleTagTap = (key: ProfileKey, multi: boolean, tag: string) => {
     if (!multi) {
       setProfile((p) => ({ ...p, [key]: (p[key] as string) === tag ? "" : tag }));
     } else {
       setProfile((p) => {
         const arr = p[key] as string[];
-        return {
-          ...p,
-          [key]: arr.includes(tag) ? arr.filter((v) => v !== tag) : [...arr, tag],
-        };
+        return { ...p, [key]: arr.includes(tag) ? arr.filter((v) => v !== tag) : [...arr, tag] };
       });
     }
   };
@@ -150,10 +203,79 @@ export default function SettingsEditPage() {
     }, 2000);
   };
 
-  const visibleCategories =
+  const showWork = activeTab === ALL_TAB || activeTab === WORK_TAB;
+  const visibleTagCategories =
     activeTab === ALL_TAB
       ? TAG_CATEGORIES
       : TAG_CATEGORIES.filter((c) => c.label === activeTab);
+
+  const WorkSection = () => (
+    <div>
+      {activeTab === ALL_TAB && (
+        <div className="px-5 py-2 bg-gray-50 border-b border-gray-100">
+          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+            仕事・職種
+          </p>
+        </div>
+      )}
+
+      {/* Big category tabs */}
+      <div
+        className="px-5 py-3 border-b border-gray-100"
+        style={{ overflowX: "auto", scrollbarWidth: "none" } as React.CSSProperties}
+      >
+        <div className="flex gap-2">
+          {WORK_CATEGORIES.map((cat, idx) => (
+            <button
+              key={cat.label}
+              onClick={() => { setWorkCategoryIdx(idx); setOpenJob(null); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
+                workCategoryIdx === idx ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Job list with accordion */}
+      {WORK_CATEGORIES[workCategoryIdx].jobs.map((job) => (
+        <div key={job.label}>
+          <button
+            type="button"
+            onClick={() => setOpenJob(openJob === job.label ? null : job.label)}
+            className="w-full flex items-center justify-between px-5 border-b border-gray-100 bg-white active:bg-gray-50 transition-colors"
+            style={{ height: "48px" }}
+          >
+            <span className="text-sm text-gray-900">{job.label}</span>
+            {openJob === job.label
+              ? <ChevronDown size={16} className="text-gray-400 shrink-0" />
+              : <ChevronRight size={16} className="text-gray-400 shrink-0" />
+            }
+          </button>
+
+          {openJob === job.label && job.details.map((detail) => {
+            const selected = selectedWorkDetails.includes(detail);
+            return (
+              <button
+                key={detail}
+                type="button"
+                onClick={() => toggleWorkDetail(detail)}
+                className={`w-full flex items-center justify-between pl-10 pr-5 border-b border-gray-100 transition-colors active:bg-gray-100 ${
+                  selected ? "bg-gray-50" : "bg-gray-50/60"
+                }`}
+                style={{ height: "44px" }}
+              >
+                <span className="text-sm text-gray-700">{detail}</span>
+                {selected && <Check size={15} className="text-gray-900 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <main
@@ -177,7 +299,7 @@ export default function SettingsEditPage() {
           <p className="text-sm text-gray-900 text-center py-8">読み込み中...</p>
         ) : (
           <>
-            {/* Name only */}
+            {/* Name */}
             <div className="px-5 py-4">
               <label className="text-xs font-medium text-gray-900 mb-1 block">名前</label>
               <input
@@ -191,20 +313,18 @@ export default function SettingsEditPage() {
 
             <div className="border-t border-gray-100" />
 
-            {/* Category tabs */}
+            {/* Main category tabs */}
             <div
               className="shrink-0 px-5 py-3 border-b border-gray-100"
               style={{ overflowX: "auto", scrollbarWidth: "none" } as React.CSSProperties}
             >
               <div className="flex gap-2">
-                {[ALL_TAB, ...TAG_CATEGORIES.map((c) => c.label)].map((tab) => (
+                {TABS.map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
-                      activeTab === tab
-                        ? "bg-gray-900 text-white"
-                        : "bg-gray-100 text-gray-600"
+                      activeTab === tab ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600"
                     }`}
                   >
                     {tab}
@@ -215,7 +335,11 @@ export default function SettingsEditPage() {
 
             {/* Tag list */}
             <div>
-              {visibleCategories.map((cat) => (
+              {/* Work section */}
+              {showWork && <WorkSection />}
+
+              {/* Other tag categories */}
+              {visibleTagCategories.map((cat) => (
                 <div key={cat.key}>
                   {activeTab === ALL_TAB && (
                     <div className="px-5 py-2 bg-gray-50 border-b border-gray-100">
@@ -266,9 +390,7 @@ export default function SettingsEditPage() {
                 onClick={handleSave}
                 disabled={saved}
                 className={`w-full py-3.5 rounded-2xl text-sm font-semibold transition-all ${
-                  saved
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-900 text-white active:opacity-80"
+                  saved ? "bg-green-500 text-white" : "bg-gray-900 text-white active:opacity-80"
                 }`}
               >
                 {saved ? "保存しました ✓" : "保存する"}
