@@ -146,7 +146,7 @@ export default function SettingsEditPage() {
                     value={profile.name}
                     onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
                     placeholder="例：田中 太郎"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
                   />
                 </div>
 
@@ -179,7 +179,7 @@ export default function SettingsEditPage() {
                     value={profile.work_context}
                     onChange={(e) => setProfile((p) => ({ ...p, work_context: e.target.value }))}
                     placeholder="例：Webエンジニア、スタートアップ"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
                   />
                 </div>
 
