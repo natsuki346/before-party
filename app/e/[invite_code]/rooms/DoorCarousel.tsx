@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSidebar } from "../SidebarContext";
 
 type EventItem = {
   invite_code: string;
@@ -175,6 +176,7 @@ function Door({ event, isMain }: { event: EventItem; isMain: boolean }) {
 // ─── Carousel ─────────────────────────────────────────────────────────────────
 export default function DoorCarousel({ currentInviteCode }: { currentInviteCode: string }) {
   const router  = useRouter();
+  const { openSidebar } = useSidebar();
   const initial = Math.max(0, DUMMY_EVENTS.findIndex((e) => e.invite_code === currentInviteCode));
   const [index, setIndex] = useState(initial);
   const N = DUMMY_EVENTS.length;
@@ -229,6 +231,33 @@ export default function DoorCarousel({ currentInviteCode }: { currentInviteCode:
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseLeave}
     >
+      {/* Sidebar trigger button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); openSidebar(); }}
+        style={{
+          position: "absolute",
+          top: "12px",
+          left: "12px",
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          backgroundColor: "rgba(255,255,255,0.75)",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "15px",
+          fontWeight: "700",
+          color: "#666",
+          zIndex: 25,
+          backdropFilter: "blur(4px)",
+        }}
+        aria-label="メニューを開く"
+      >
+        ?
+      </button>
+
       {DUMMY_EVENTS.map((event, i) => {
         const role = getRole(i, index, N);
         return (
