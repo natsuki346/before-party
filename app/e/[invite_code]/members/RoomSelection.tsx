@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, MessageCircle } from "lucide-react";
+import { Bell, Menu, MessageCircle } from "lucide-react";
+import { useSidebar } from "../SidebarContext";
 
 const ROOMS = [
   { invite_code: "test-event", title: "テストイベント", count: 4  },
@@ -203,6 +204,7 @@ export default function RoomSelection({
   myInitial: string;
   inviteCode: string;
 }) {
+  const { openSidebar } = useSidebar();
   const [roomIdx, setRoomIdx]       = useState(0);
   const [dragX, setDragX]           = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -243,8 +245,32 @@ export default function RoomSelection({
         margin: "0 auto",
         height: "100dvh",
         backgroundColor: "#ffffff",
+        position: "relative",
       }}
     >
+      {/* Sidebar trigger button */}
+      <button
+        onClick={openSidebar}
+        style={{
+          position: "absolute",
+          top: "12px",
+          left: "12px",
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          backgroundColor: "rgba(255,255,255,0.75)",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 25,
+          backdropFilter: "blur(4px)",
+        }}
+        aria-label="メニューを開く"
+      >
+        <Menu size={18} />
+      </button>
 
       {/* Header */}
       <div className="shrink-0 h-12 flex items-center gap-2 px-3 border-b border-gray-100">
