@@ -8,10 +8,10 @@ import RoomSelection from "./RoomSelection";
 import { useSidebar } from "../SidebarContext";
 
 function getMatchColor(score: number): string {
-  if (score >= 80) return "#ef4444";
-  if (score >= 60) return "#f97316";
-  if (score >= 40) return "#eab308";
-  if (score >= 20) return "#3b82f6";
+  if (score >= 40) return "#ef4444";
+  if (score >= 25) return "#f97316";
+  if (score >= 15) return "#eab308";
+  if (score >= 5)  return "#3b82f6";
   return "#6366f1";
 }
 
@@ -143,6 +143,7 @@ export default function MembersList({
     maxWidth: "390px",
     margin: "0 auto",
     height: "100dvh",
+    background: "linear-gradient(135deg, #f5f0eb 0%, #ede8e3 100%)",
   };
 
   const emptyScreen = (icon: string, title: string, body: string) => (
@@ -187,7 +188,7 @@ export default function MembersList({
 
   return (
     <main
-      className="flex flex-col overflow-hidden bg-gray-50"
+      className="flex flex-col overflow-hidden"
       style={containerStyle}
     >
       {/* Header */}
@@ -263,7 +264,7 @@ export default function MembersList({
               zIndex: 0,
             }}
           >
-            <div className="w-full h-full bg-white rounded-2xl shadow-md p-5">
+            <div className="w-full h-full rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
               <div className="h-6 bg-gray-100 rounded-full mb-3 w-2/5" />
               <div className="h-3 bg-gray-100 rounded-full mb-2 w-full" />
               <div className="h-3 bg-gray-100 rounded-full w-3/5" />
@@ -289,7 +290,7 @@ export default function MembersList({
           onMouseUp={() => { setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
           onMouseLeave={() => { if (!isDragging) return; setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
         >
-          <div className="w-full h-full bg-white rounded-2xl shadow-xl overflow-hidden relative" style={{ borderLeft: `4px solid ${matchColor}` }}>
+          <div className="w-full h-full rounded-2xl overflow-hidden relative" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.5)", borderLeft: `4px solid ${matchColor}`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
 
             {/* LIKE overlay */}
             <div
