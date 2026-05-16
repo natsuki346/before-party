@@ -170,7 +170,7 @@ export default function MembersList({
 
   const matchColor = getMatchColor(card.score);
 
-  const translateX = flyOut ? (flyOut === "right" ? 700 : -700) : dragX;
+  const translateX = flyOut ? (flyOut === "right" ? 400 : -400) : dragX;
   const rotate = flyOut ? (flyOut === "right" ? 25 : -25) : dragX * 0.04;
 
   const swipeTransform = `translateX(${translateX}px) rotate(${rotate}deg)`;
@@ -257,7 +257,7 @@ export default function MembersList({
             className="pointer-events-none"
             style={{
               ...cardBase,
-              transform: "scale(0.96) translateY(8px)",
+              transform: "scale(0.95) translateY(6px)",
               zIndex: 0,
             }}
           >
