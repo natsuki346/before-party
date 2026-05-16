@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, Menu, MessageCircle } from "lucide-react";
+import { Bell, MessageCircle } from "lucide-react";
 import { useSidebar } from "../SidebarContext";
 
 const ROOMS = [
@@ -245,41 +245,16 @@ export default function RoomSelection({
         margin: "0 auto",
         height: "100dvh",
         backgroundColor: "#ffffff",
-        position: "relative",
       }}
     >
-      {/* Sidebar trigger button */}
-      <button
-        onClick={openSidebar}
-        style={{
-          position: "absolute",
-          top: "12px",
-          left: "12px",
-          width: "32px",
-          height: "32px",
-          borderRadius: "50%",
-          backgroundColor: "rgba(255,255,255,0.75)",
-          border: "none",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 25,
-          backdropFilter: "blur(4px)",
-        }}
-        aria-label="メニューを開く"
-      >
-        <Menu size={18} />
-      </button>
-
       {/* Header */}
       <div className="shrink-0 h-12 flex items-center gap-2 px-3 border-b border-gray-100">
-        {/* Left: avatar → settings */}
-        <Link href={`/e/${inviteCode}/settings`} className="shrink-0">
+        {/* Left: avatar → sidebar */}
+        <button onClick={openSidebar} className="shrink-0" aria-label="メニューを開く">
           <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
             {myInitial}
           </div>
-        </Link>
+        </button>
 
         {/* Center: label */}
         <span className="flex-1 text-center text-sm font-bold text-gray-800">
