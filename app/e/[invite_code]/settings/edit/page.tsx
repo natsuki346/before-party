@@ -153,13 +153,13 @@ export default function SettingsEditPage() {
                 {/* Life stage */}
                 <div>
                   <label className="text-xs font-medium text-gray-900 mb-2 block">ライフステージ</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div style={{ display: "flex", overflowX: "auto", gap: "8px", paddingBottom: "4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
                     {LIFE_STAGES.map((s) => (
                       <button
                         key={s}
                         type="button"
                         onClick={() => setProfile((p) => ({ ...p, life_stage: s }))}
-                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
+                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors shrink-0 whitespace-nowrap ${
                           profile.life_stage === s
                             ? "bg-gray-900 text-white border-gray-900"
                             : "border-gray-200 text-gray-900"
@@ -186,13 +186,13 @@ export default function SettingsEditPage() {
                 {/* Worries */}
                 <div>
                   <label className="text-xs font-medium text-gray-900 mb-2 block">最近の悩み</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div style={{ display: "flex", overflowX: "auto", gap: "8px", paddingBottom: "4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
                     {WORRIES_OPTIONS.map((w) => (
                       <button
                         key={w}
                         type="button"
                         onClick={() => toggle("worries", w)}
-                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
+                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors shrink-0 whitespace-nowrap ${
                           profile.worries.includes(w)
                             ? "bg-orange-100 text-orange-700 border-orange-200"
                             : "border-gray-200 text-gray-900"
@@ -207,13 +207,13 @@ export default function SettingsEditPage() {
                 {/* Values */}
                 <div>
                   <label className="text-xs font-medium text-gray-900 mb-2 block">大切にしている価値観</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div style={{ display: "flex", overflowX: "auto", gap: "8px", paddingBottom: "4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
                     {VALUES_OPTIONS.map((v) => (
                       <button
                         key={v}
                         type="button"
                         onClick={() => toggle("values", v)}
-                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
+                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors shrink-0 whitespace-nowrap ${
                           profile.values.includes(v)
                             ? "bg-gray-900 text-white border-gray-900"
                             : "border-gray-200 text-gray-900"
