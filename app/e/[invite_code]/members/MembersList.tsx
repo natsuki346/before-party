@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, ChevronLeft, ChevronRight, Menu, MessageCircle } from "lucide-react";
+import { ArrowLeft, Bell, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import type { Event, ParticipantWithProfile } from "@/lib/supabase/types";
 import RoomSelection from "./RoomSelection";
-import { useSidebar } from "../SidebarContext";
 
 function getMatchColor(score: number): string {
   if (score >= 50) return "#ef4444";
@@ -74,7 +73,6 @@ export default function MembersList({
     return i >= 0 ? i : 0;
   });
 
-  const { openSidebar } = useSidebar();
   const startX = useRef(0);
   const headerStartX = useRef(0);
 
@@ -201,15 +199,6 @@ export default function MembersList({
     >
       {/* Header */}
       <div className="shrink-0 h-12 flex items-center gap-2 px-3">
-        {/* Far left: sidebar menu */}
-        <button
-          onClick={openSidebar}
-          className="shrink-0 p-1 text-gray-700 active:opacity-60 transition-opacity"
-          aria-label="メニューを開く"
-        >
-          <Menu size={20} />
-        </button>
-
         {/* Left: back to room selection */}
         <button
           onClick={() => { setView("rooms"); setIndex(0); }}
