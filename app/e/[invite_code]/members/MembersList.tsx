@@ -290,7 +290,7 @@ export default function MembersList({
           onMouseUp={() => { setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
           onMouseLeave={() => { if (!isDragging) return; setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
         >
-          <div className="w-full h-full rounded-2xl overflow-hidden relative" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.5)", borderLeft: `4px solid ${matchColor}`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
+          <div className="w-full h-full rounded-2xl overflow-hidden relative" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,0.5)", borderRight: "1px solid rgba(255,255,255,0.5)", borderBottom: "1px solid rgba(255,255,255,0.5)", borderLeft: `4px solid ${matchColor}`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
 
             {/* LIKE overlay */}
             <div
