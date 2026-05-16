@@ -14,13 +14,15 @@ type ProfileData = {
   values: string[];
 };
 
+const EMPTY: ProfileData = { name: "", life_stage: "", work_context: "", worries: [], values: [] };
+
 export default function SettingsPage() {
   const params = useParams();
   const inviteCode = Array.isArray(params.invite_code)
     ? params.invite_code[0]
     : (params.invite_code ?? "");
 
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<ProfileData>(EMPTY);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function SettingsPage() {
           values: prof?.values ?? [],
         });
       } catch {
-        setProfile({ name: "", life_stage: "", work_context: "", worries: [], values: [] });
+        // keep empty defaults
       }
       setIsLoading(false);
     })();
@@ -76,73 +78,58 @@ export default function SettingsPage() {
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <p className="text-sm text-gray-400 text-center py-12">読み込み中...</p>
-        ) : profile === null ? (
-          <div className="flex flex-col items-center justify-center py-12 px-8 text-center gap-3">
-            <p className="text-sm text-gray-500">プロフィールがまだ登録されていません</p>
-            <Link
-              href={`/e/${inviteCode}/settings/edit`}
-              className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold"
-            >
-              プロフィールを登録する
-            </Link>
-          </div>
         ) : (
           <>
-            {/* Cover image */}
-            <div
-              style={{
-                height: "100px",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                flexShrink: 0,
-              }}
-            />
+            {/* Cover */}
+            <div className="bg-gradient-to-br from-gray-100 to-gray-200" style={{ height: "100px" }} />
 
             {/* Avatar */}
             <div className="px-4">
               <div
-                className="w-16 h-16 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xl font-bold border-4 border-white"
-                style={{ marginTop: "-32px" }}
+                className={`w-[72px] h-[72px] rounded-full flex items-center justify-center text-2xl font-bold border-4 border-white -mt-9 ${
+                  profile.name ? "bg-indigo-500 text-white" : "bg-gray-200 text-gray-400"
+                }`}
               >
-                {profile.name?.[0] ?? "?"}
+                {profile.name ? profile.name[0] : "?"}
               </div>
             </div>
 
             {/* Profile info */}
-            <div className="px-4 pt-3 pb-8 flex flex-col gap-5">
-              {/* Name */}
-              <h2 className="text-lg font-bold text-gray-900 leading-snug">
-                {profile.name || "—"}
-              </h2>
-
-              {/* work_context */}
-              {profile.work_context && (
-                <p className="text-sm text-gray-600 leading-relaxed -mt-2">
-                  {profile.work_context}
+            <div className="px-4 pt-3 pb-6 flex flex-col gap-5">
+              {/* Name + work_context */}
+              <div className="flex flex-col gap-1.5">
+                <h2 className={`text-lg font-bold leading-snug ${profile.name ? "text-gray-900" : "text-gray-400"}`}>
+                  {profile.name || "名前未設定"}
+                </h2>
+                <p className={`text-sm leading-relaxed ${profile.work_context ? "text-gray-600" : "text-gray-400"}`}>
+                  {profile.work_context || "仕事・活動内容未設定"}
                 </p>
-              )}
+              </div>
 
               <div className="border-t border-gray-100" />
 
-              {/* life_stage */}
-              {profile.life_stage && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    ライフステージ
-                  </p>
+              {/* Life stage */}
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  ライフステージ
+                </p>
+                {profile.life_stage ? (
                   <div>
                     <span className="px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-600">
                       {profile.life_stage}
                     </span>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-xs text-gray-400">未設定</p>
+                )}
+              </div>
 
-              {/* worries */}
-              {profile.worries.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    最近の悩み
-                  </p>
+              {/* Worries */}
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  最近の悩み
+                </p>
+                {profile.worries.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {profile.worries.map((w) => (
                       <span
@@ -153,15 +140,17 @@ export default function SettingsPage() {
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-xs text-gray-400">未設定</p>
+                )}
+              </div>
 
-              {/* values */}
-              {profile.values.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    大切にしていること
-                  </p>
+              {/* Values */}
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  価値観
+                </p>
+                {profile.values.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {profile.values.map((v) => (
                       <span
@@ -172,8 +161,18 @@ export default function SettingsPage() {
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-xs text-gray-400">未設定</p>
+                )}
+              </div>
+
+              {/* Edit button */}
+              <Link
+                href={`/e/${inviteCode}/settings/edit`}
+                className="w-full py-3.5 rounded-2xl text-sm font-semibold bg-gray-900 text-white text-center active:opacity-80 transition-opacity mt-2"
+              >
+                プロフィールを編集する
+              </Link>
             </div>
           </>
         )}
