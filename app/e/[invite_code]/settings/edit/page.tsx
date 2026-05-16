@@ -10,21 +10,32 @@ const TAG_CATEGORIES = [
   {
     label: "ライフステージ",
     key: "life_stage" as const,
+    multi: false,
     tags: ["学生", "社会人（会社員）", "フリーランス", "起業家", "その他"],
+  },
+  {
+    label: "仕事・職種",
+    key: "work_context" as const,
+    multi: false,
+    tags: ["エンジニア", "デザイナー", "マーケター", "営業", "経営者", "研究・教育", "医療・福祉", "クリエイター", "その他"],
   },
   {
     label: "悩み",
     key: "worries" as const,
+    multi: true,
     tags: ["キャリアの方向性", "人間関係", "お金・資産", "健康・体力", "時間の使い方", "スキルアップ", "家族・パートナー", "仕事のやりがい"],
   },
   {
     label: "価値観",
     key: "values" as const,
+    multi: true,
     tags: ["自由", "安定", "成長", "貢献", "挑戦", "つながり", "創造", "効率"],
   },
 ];
 
 const ALL_TAB = "すべて";
+
+type ProfileKey = "life_stage" | "work_context" | "worries" | "values";
 
 type Profile = {
   name: string;
@@ -99,20 +110,23 @@ export default function SettingsEditPage() {
     })();
   }, [inviteCode]);
 
-  const handleTagTap = (key: "life_stage" | "worries" | "values", tag: string) => {
-    if (key === "life_stage") {
-      setProfile((p) => ({ ...p, life_stage: p.life_stage === tag ? "" : tag }));
+  const handleTagTap = (key: ProfileKey, multi: boolean, tag: string) => {
+    if (!multi) {
+      setProfile((p) => ({ ...p, [key]: (p[key] as string) === tag ? "" : tag }));
     } else {
-      setProfile((p) => ({
-        ...p,
-        [key]: p[key].includes(tag) ? p[key].filter((v) => v !== tag) : [...p[key], tag],
-      }));
+      setProfile((p) => {
+        const arr = p[key] as string[];
+        return {
+          ...p,
+          [key]: arr.includes(tag) ? arr.filter((v) => v !== tag) : [...arr, tag],
+        };
+      });
     }
   };
 
-  const isSelected = (key: "life_stage" | "worries" | "values", tag: string): boolean => {
-    if (key === "life_stage") return profile.life_stage === tag;
-    return profile[key].includes(tag);
+  const isSelected = (key: ProfileKey, multi: boolean, tag: string): boolean => {
+    if (!multi) return (profile[key] as string) === tag;
+    return (profile[key] as string[]).includes(tag);
   };
 
   const handleSave = async () => {
@@ -163,28 +177,16 @@ export default function SettingsEditPage() {
           <p className="text-sm text-gray-900 text-center py-8">読み込み中...</p>
         ) : (
           <>
-            {/* Name + Work context */}
-            <div className="px-5 py-4 flex flex-col gap-3">
-              <div>
-                <label className="text-xs font-medium text-gray-900 mb-1 block">名前</label>
-                <input
-                  type="text"
-                  value={profile.name}
-                  onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="例：田中 太郎"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-900 mb-1 block">仕事・活動内容</label>
-                <input
-                  type="text"
-                  value={profile.work_context}
-                  onChange={(e) => setProfile((p) => ({ ...p, work_context: e.target.value }))}
-                  placeholder="例：Webエンジニア、スタートアップ"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
-                />
-              </div>
+            {/* Name only */}
+            <div className="px-5 py-4">
+              <label className="text-xs font-medium text-gray-900 mb-1 block">名前</label>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                placeholder="例：田中 太郎"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
+              />
             </div>
 
             <div className="border-t border-gray-100" />
@@ -223,12 +225,12 @@ export default function SettingsEditPage() {
                     </div>
                   )}
                   {cat.tags.map((tag) => {
-                    const selected = isSelected(cat.key, tag);
+                    const selected = isSelected(cat.key, cat.multi, tag);
                     return (
                       <button
                         key={tag}
                         type="button"
-                        onClick={() => handleTagTap(cat.key, tag)}
+                        onClick={() => handleTagTap(cat.key, cat.multi, tag)}
                         className={`w-full flex items-center justify-between px-5 border-b border-gray-100 transition-colors active:bg-gray-50 ${
                           selected ? "bg-gray-50" : "bg-white"
                         }`}
