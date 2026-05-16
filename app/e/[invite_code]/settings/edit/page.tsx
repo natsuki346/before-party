@@ -3,12 +3,28 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Bell } from "lucide-react";
+import { ArrowLeft, Bell, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-const LIFE_STAGES = ["学生", "社会人（会社員）", "フリーランス", "起業家", "その他"];
-const WORRIES_OPTIONS = ["キャリアの方向性", "人間関係", "お金・資産", "健康・体力", "時間の使い方", "スキルアップ", "家族・パートナー", "仕事のやりがい"];
-const VALUES_OPTIONS  = ["自由", "安定", "成長", "貢献", "挑戦", "つながり", "創造", "効率"];
+const TAG_CATEGORIES = [
+  {
+    label: "ライフステージ",
+    key: "life_stage" as const,
+    tags: ["学生", "社会人（会社員）", "フリーランス", "起業家", "その他"],
+  },
+  {
+    label: "悩み",
+    key: "worries" as const,
+    tags: ["キャリアの方向性", "人間関係", "お金・資産", "健康・体力", "時間の使い方", "スキルアップ", "家族・パートナー", "仕事のやりがい"],
+  },
+  {
+    label: "価値観",
+    key: "values" as const,
+    tags: ["自由", "安定", "成長", "貢献", "挑戦", "つながり", "創造", "効率"],
+  },
+];
+
+const ALL_TAB = "すべて";
 
 type Profile = {
   name: string;
@@ -51,6 +67,7 @@ export default function SettingsEditPage() {
     worries: [],
     values: [],
   });
+  const [activeTab, setActiveTab] = useState(ALL_TAB);
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,11 +99,20 @@ export default function SettingsEditPage() {
     })();
   }, [inviteCode]);
 
-  const toggle = (key: "worries" | "values", val: string) => {
-    setProfile((p) => ({
-      ...p,
-      [key]: p[key].includes(val) ? p[key].filter((v) => v !== val) : [...p[key], val],
-    }));
+  const handleTagTap = (key: "life_stage" | "worries" | "values", tag: string) => {
+    if (key === "life_stage") {
+      setProfile((p) => ({ ...p, life_stage: p.life_stage === tag ? "" : tag }));
+    } else {
+      setProfile((p) => ({
+        ...p,
+        [key]: p[key].includes(tag) ? p[key].filter((v) => v !== tag) : [...p[key], tag],
+      }));
+    }
+  };
+
+  const isSelected = (key: "life_stage" | "worries" | "values", tag: string): boolean => {
+    if (key === "life_stage") return profile.life_stage === tag;
+    return profile[key].includes(tag);
   };
 
   const handleSave = async () => {
@@ -110,6 +136,11 @@ export default function SettingsEditPage() {
     }, 2000);
   };
 
+  const visibleCategories =
+    activeTab === ALL_TAB
+      ? TAG_CATEGORIES
+      : TAG_CATEGORIES.filter((c) => c.label === activeTab);
+
   return (
     <main
       className="flex flex-col bg-white overflow-hidden"
@@ -127,135 +158,120 @@ export default function SettingsEditPage() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto flex flex-col">
         {isLoading ? (
           <p className="text-sm text-gray-900 text-center py-8">読み込み中...</p>
         ) : (
           <>
-            {/* Profile section */}
-            <section>
-              <h2 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-3">
-                プロフィール
-              </h2>
-              <div className="flex flex-col gap-3">
-                {/* Name */}
-                <div>
-                  <label className="text-xs font-medium text-gray-900 mb-1 block">名前</label>
-                  <input
-                    type="text"
-                    value={profile.name}
-                    onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="例：田中 太郎"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
-                  />
-                </div>
-
-                {/* Life stage */}
-                <div>
-                  <label className="text-xs font-medium text-gray-900 mb-2 block">ライフステージ</label>
-                  <div style={{ display: "flex", overflowX: "auto", gap: "8px", paddingBottom: "4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-                    {LIFE_STAGES.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setProfile((p) => ({ ...p, life_stage: s }))}
-                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors shrink-0 whitespace-nowrap ${
-                          profile.life_stage === s
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-200 text-gray-900"
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Work context */}
-                <div>
-                  <label className="text-xs font-medium text-gray-900 mb-1 block">仕事・活動内容</label>
-                  <input
-                    type="text"
-                    value={profile.work_context}
-                    onChange={(e) => setProfile((p) => ({ ...p, work_context: e.target.value }))}
-                    placeholder="例：Webエンジニア、スタートアップ"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
-                  />
-                </div>
-
-                {/* Worries */}
-                <div>
-                  <label className="text-xs font-medium text-gray-900 mb-2 block">最近の悩み</label>
-                  <div style={{ display: "flex", overflowX: "auto", gap: "8px", paddingBottom: "4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-                    {WORRIES_OPTIONS.map((w) => (
-                      <button
-                        key={w}
-                        type="button"
-                        onClick={() => toggle("worries", w)}
-                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors shrink-0 whitespace-nowrap ${
-                          profile.worries.includes(w)
-                            ? "bg-orange-100 text-orange-700 border-orange-200"
-                            : "border-gray-200 text-gray-900"
-                        }`}
-                      >
-                        {w}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Values */}
-                <div>
-                  <label className="text-xs font-medium text-gray-900 mb-2 block">大切にしている価値観</label>
-                  <div style={{ display: "flex", overflowX: "auto", gap: "8px", paddingBottom: "4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-                    {VALUES_OPTIONS.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => toggle("values", v)}
-                        className={`px-3 py-1.5 rounded-full border text-xs transition-colors shrink-0 whitespace-nowrap ${
-                          profile.values.includes(v)
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-200 text-gray-900"
-                        }`}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Name + Work context */}
+            <div className="px-5 py-4 flex flex-col gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-900 mb-1 block">名前</label>
+                <input
+                  type="text"
+                  value={profile.name}
+                  onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="例：田中 太郎"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
+                />
               </div>
-            </section>
+              <div>
+                <label className="text-xs font-medium text-gray-900 mb-1 block">仕事・活動内容</label>
+                <input
+                  type="text"
+                  value={profile.work_context}
+                  onChange={(e) => setProfile((p) => ({ ...p, work_context: e.target.value }))}
+                  placeholder="例：Webエンジニア、スタートアップ"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none focus:border-gray-900 transition-colors"
+                />
+              </div>
+            </div>
 
-            {/* Divider */}
             <div className="border-t border-gray-100" />
 
-            {/* Notification section */}
-            <section>
-              <h2 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-3">
-                通知
-              </h2>
-              <div className="flex items-center justify-between py-1">
-                <div className="flex items-center gap-2.5">
-                  <Bell size={16} className="text-gray-900" />
-                  <span className="text-sm text-gray-900">プッシュ通知</span>
-                </div>
-                <Toggle checked={notifEnabled} onChange={setNotifEnabled} />
-              </div>
-            </section>
-
-            {/* Save button */}
-            <button
-              onClick={handleSave}
-              disabled={saved}
-              className={`w-full py-3.5 rounded-2xl text-sm font-semibold transition-all ${
-                saved
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-900 text-white active:opacity-80"
-              }`}
+            {/* Category tabs */}
+            <div
+              className="shrink-0 px-5 py-3 border-b border-gray-100"
+              style={{ overflowX: "auto", scrollbarWidth: "none" } as React.CSSProperties}
             >
-              {saved ? "保存しました ✓" : "保存する"}
-            </button>
+              <div className="flex gap-2">
+                {[ALL_TAB, ...TAG_CATEGORIES.map((c) => c.label)].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
+                      activeTab === tab
+                        ? "bg-gray-900 text-white"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tag list */}
+            <div>
+              {visibleCategories.map((cat) => (
+                <div key={cat.key}>
+                  {activeTab === ALL_TAB && (
+                    <div className="px-5 py-2 bg-gray-50 border-b border-gray-100">
+                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                        {cat.label}
+                      </p>
+                    </div>
+                  )}
+                  {cat.tags.map((tag) => {
+                    const selected = isSelected(cat.key, tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleTagTap(cat.key, tag)}
+                        className={`w-full flex items-center justify-between px-5 border-b border-gray-100 transition-colors active:bg-gray-50 ${
+                          selected ? "bg-gray-50" : "bg-white"
+                        }`}
+                        style={{ height: "48px" }}
+                      >
+                        <span className="text-sm text-gray-900">{tag}</span>
+                        {selected && <Check size={16} className="text-gray-900 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Notification + Save */}
+            <div className="px-5 py-4 flex flex-col gap-6">
+              <section>
+                <h2 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                  通知
+                </h2>
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2.5">
+                    <Bell size={16} className="text-gray-900" />
+                    <span className="text-sm text-gray-900">プッシュ通知</span>
+                  </div>
+                  <Toggle checked={notifEnabled} onChange={setNotifEnabled} />
+                </div>
+              </section>
+
+              <button
+                onClick={handleSave}
+                disabled={saved}
+                className={`w-full py-3.5 rounded-2xl text-sm font-semibold transition-all ${
+                  saved
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-900 text-white active:opacity-80"
+                }`}
+              >
+                {saved ? "保存しました ✓" : "保存する"}
+              </button>
+            </div>
           </>
         )}
       </div>
