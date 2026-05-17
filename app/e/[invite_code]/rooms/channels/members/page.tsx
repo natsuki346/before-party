@@ -41,7 +41,14 @@ const DUMMY_ROOM_MEMBERS = [
   },
 ];
 
-// Flat list of all members with roomName merged in
+const FILTER_CATEGORIES: Record<string, string[]> = {
+  属性: ["学生", "社会人（会社員）", "フリーランス", "起業家", "その他"],
+  職種: ["エンジニア", "デザイナー", "マーケター", "営業", "経営者", "研究・教育", "医療・福祉", "その他"],
+  価値観: ["自由", "安定", "成長", "貢献", "挑戦", "つながり", "創造", "効率"],
+};
+
+const CATEGORY_KEYS = Object.keys(FILTER_CATEGORIES);
+
 const allMembers = DUMMY_ROOM_MEMBERS.flatMap((r) =>
   r.members.map((m) => ({
     ...m,
@@ -50,30 +57,36 @@ const allMembers = DUMMY_ROOM_MEMBERS.flatMap((r) =>
   }))
 );
 
-// All unique tags from roomNames + member tags
-const allTags = Array.from(
-  new Set(DUMMY_ROOM_MEMBERS.flatMap((r) => r.members.flatMap((m) => [r.roomName, ...m.tags])))
-);
-
 export default function MembersPage() {
   const params = useParams();
   const inviteCode = Array.isArray(params.invite_code)
     ? params.invite_code[0]
     : (params.invite_code ?? "");
 
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+  const toggleLabel = (label: string) => {
+    setSelectedLabels((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
     );
+  };
+
+  const handleCategoryClick = (cat: string) => {
+    if (activeCategory === cat) {
+      setActiveCategory(null);
+    } else {
+      setActiveCategory(cat);
+    }
   };
 
   const filteredMembers = allMembers.filter(
     (m) =>
-      selectedTags.length === 0 ||
-      selectedTags.some((t) => m.allTags.includes(t))
+      selectedLabels.length === 0 ||
+      selectedLabels.some((l) => m.allTags.includes(l))
   );
+
+  const currentLabels = activeCategory ? FILTER_CATEGORIES[activeCategory] : [];
 
   return (
     <main
@@ -93,48 +106,84 @@ export default function MembersPage() {
         <span className="text-xs text-gray-400">{filteredMembers.length}人</span>
       </div>
 
-      {/* Filter area */}
-      <div className="shrink-0 border-b border-gray-100">
-        {/* Filter label + clear */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <span className="text-xs font-semibold text-gray-500">
-            フィルタ
-            {selectedTags.length > 0 && (
-              <span className="ml-1.5 text-gray-900">{selectedTags.length}個選択中</span>
-            )}
-          </span>
-          {selectedTags.length > 0 && (
-            <button
-              onClick={() => setSelectedTags([])}
-              className="text-xs text-gray-400 active:opacity-60 transition-opacity"
-            >
-              クリア
-            </button>
-          )}
-        </div>
-        {/* Scrollable tag buttons */}
-        <div
-          className="flex gap-2 px-4 pb-3 overflow-x-auto"
-          style={{ scrollbarWidth: "none" } as React.CSSProperties}
+      {/* Stage 1: Category tabs */}
+      <div
+        className="shrink-0 flex gap-2 px-4 py-3 border-b border-gray-100"
+        style={{ overflowX: "auto", scrollbarWidth: "none" } as React.CSSProperties}
+      >
+        <button
+          onClick={() => { setActiveCategory(null); setSelectedLabels([]); }}
+          className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            activeCategory === null && selectedLabels.length === 0
+              ? "bg-gray-900 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
         >
-          {allTags.map((tag) => {
-            const active = selectedTags.includes(tag);
+          すべて
+        </button>
+        {CATEGORY_KEYS.map((cat) => {
+          const isActive = activeCategory === cat;
+          const hasSelection = selectedLabels.some((l) => FILTER_CATEGORIES[cat].includes(l));
+          return (
+            <button
+              key={cat}
+              onClick={() => handleCategoryClick(cat)}
+              className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                isActive || hasSelection
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {cat}
+              {hasSelection && !isActive && (
+                <span className="ml-1 text-xs opacity-70">
+                  ({selectedLabels.filter((l) => FILTER_CATEGORIES[cat].includes(l)).length})
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Stage 2: Label chips (shown when a category is selected) */}
+      {activeCategory && (
+        <div
+          className="shrink-0 flex gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-100"
+          style={{ overflowX: "auto", scrollbarWidth: "none" } as React.CSSProperties}
+        >
+          {currentLabels.map((label) => {
+            const selected = selectedLabels.includes(label);
             return (
               <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
+                key={label}
+                onClick={() => toggleLabel(label)}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                  active
+                  selected
                     ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                 }`}
               >
-                #{tag}
+                {label}
               </button>
             );
           })}
         </div>
-      </div>
+      )}
+
+      {/* Selected labels summary + clear */}
+      {selectedLabels.length > 0 && (
+        <div className="shrink-0 flex items-center justify-between px-4 py-1.5 border-b border-gray-100 bg-gray-50">
+          <span className="text-xs text-gray-500">
+            <span className="font-semibold text-gray-900">{selectedLabels.length}個</span>のフィルタ適用中
+          </span>
+          <button
+            onClick={() => setSelectedLabels([])}
+            className="text-xs text-gray-400 active:opacity-60 transition-opacity"
+          >
+            クリア
+          </button>
+        </div>
+      )}
 
       {/* Flat member list */}
       <div className="flex-1 overflow-y-auto">
@@ -148,16 +197,14 @@ export default function MembersPage() {
               key={i}
               className="flex items-center gap-3 px-4 py-3 border-b border-gray-50"
             >
-              {/* Avatar */}
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 shrink-0">
                 {member.name[0]}
               </div>
-              {/* Name + tags */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 mb-1.5">{member.name}</p>
                 <div className="flex flex-wrap gap-1">
                   {member.allTags.map((tag) => {
-                    const highlighted = selectedTags.includes(tag);
+                    const highlighted = selectedLabels.includes(tag);
                     return (
                       <span
                         key={tag}
