@@ -281,7 +281,7 @@ export default function RoomSelection({
       }}
     >
       {/* Header */}
-      <div className="shrink-0 h-12 flex items-center gap-2 px-3 border-b border-gray-100">
+      <div className="shrink-0 h-14 flex items-center gap-2 px-3 border-b border-gray-100">
         {/* Left: avatar → sidebar */}
         <button onClick={openSidebar} className="shrink-0" aria-label="メニューを開く">
           <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
@@ -297,14 +297,14 @@ export default function RoomSelection({
         {/* Right: bell + chat */}
         <div className="flex items-center shrink-0">
           <button className="relative p-1.5">
-            <Bell size={20} className="text-gray-700" />
-            <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none">
+            <Bell size={24} className="text-gray-700" />
+            <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
               2
             </span>
           </button>
           <Link href={`/e/${inviteCode}/chats`} className="relative p-1.5">
-            <MessageCircle size={20} className="text-gray-700" />
-            <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none">
+            <MessageCircle size={24} className="text-gray-700" />
+            <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
               2
             </span>
           </Link>
