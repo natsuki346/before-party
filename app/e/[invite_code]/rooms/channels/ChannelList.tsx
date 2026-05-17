@@ -6,6 +6,45 @@ import { Hash, Plus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Event, Room } from "@/lib/supabase/types";
 
+const DUMMY_ROOM_MEMBERS = [
+  {
+    roomName: "エンジニア",
+    category: "職種",
+    members: [
+      { name: "田中 太郎", tags: ["フロントエンド", "成長", "挑戦"] },
+      { name: "佐藤 花子", tags: ["バックエンド", "効率"] },
+      { name: "鈴木 一郎", tags: ["AI・ML", "挑戦", "成長"] },
+    ],
+  },
+  {
+    roomName: "起業家",
+    category: "属性",
+    members: [
+      { name: "山田 美咲", tags: ["経営者", "貢献", "つながり"] },
+      { name: "伊藤 健",   tags: ["スタートアップ", "挑戦"] },
+    ],
+  },
+  {
+    roomName: "フリーランス",
+    category: "属性",
+    members: [
+      { name: "木村 さくら", tags: ["UIデザイン", "自由", "創造"] },
+      { name: "中村 翔",     tags: ["マーケター", "効率"] },
+    ],
+  },
+  {
+    roomName: "キャリア相談",
+    category: "価値観",
+    members: [
+      { name: "小林 葵", tags: ["社会人（会社員）", "キャリア", "成長"] },
+      { name: "加藤 蓮", tags: ["転職活動中", "スキルアップ"] },
+    ],
+  },
+];
+
+const MEMBER_FILTER_TABS = ["すべて", "属性", "職種", "価値観"] as const;
+type MemberFilterTab = typeof MEMBER_FILTER_TABS[number];
+
 const CATEGORY_TABS = ["すべて", "属性", "目的", "職種", "年齢"] as const;
 type CategoryTab = (typeof CATEGORY_TABS)[number];
 
@@ -53,6 +92,8 @@ export default function ChannelList({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [roomName, setRoomName]     = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [showMembers, setShowMembers]     = useState(false);
+  const [memberFilter, setMemberFilter]   = useState<MemberFilterTab>("すべて");
 
   const visiblePresets =
     activeTab === "すべて"
@@ -94,7 +135,14 @@ export default function ChannelList({
     >
       {/* Header */}
       <div className="shrink-0 h-12 flex items-center px-4 border-b border-gray-100">
-        <h1 className="text-sm font-bold text-gray-900 truncate">{event.title}</h1>
+        <h1 className="text-sm font-bold text-gray-900 truncate flex-1">{event.title}</h1>
+        <button
+          onClick={() => setShowMembers(true)}
+          className="p-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-100 transition-colors"
+          aria-label="参加者一覧"
+        >
+          <Users size={18} className="text-gray-700" />
+        </button>
       </div>
 
       {/* ── Parent tabs (デフォルト | オリジナル) ── */}
@@ -193,6 +241,76 @@ export default function ChannelList({
           </div>
         </div>
       )}
+
+      {/* Members bottom sheet */}
+      {showMembers && (() => {
+        const totalMembers = DUMMY_ROOM_MEMBERS.reduce((sum, r) => sum + r.members.length, 0);
+        const visibleRooms = memberFilter === "すべて"
+          ? DUMMY_ROOM_MEMBERS
+          : DUMMY_ROOM_MEMBERS.filter((r) => r.category === memberFilter);
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowMembers(false)} />
+            <div style={{ position: "relative", width: "390px", maxHeight: "80dvh", background: "white", borderRadius: "20px 20px 0 0", display: "flex", flexDirection: "column", zIndex: 1 }}>
+              {/* Handle */}
+              <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto 0" }} />
+              {/* Title */}
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6" }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>
+                  イベント参加者 <span style={{ fontWeight: 400, color: "#6b7280" }}>（{totalMembers}人）</span>
+                </p>
+              </div>
+              {/* Filter tabs */}
+              <div style={{ display: "flex", gap: 8, padding: "10px 16px", borderBottom: "1px solid #f3f4f6", overflowX: "auto", scrollbarWidth: "none" }}>
+                {MEMBER_FILTER_TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setMemberFilter(tab)}
+                    style={{
+                      flexShrink: 0, padding: "4px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500,
+                      background: memberFilter === tab ? "#111827" : "#f3f4f6",
+                      color: memberFilter === tab ? "white" : "#6b7280",
+                      border: "none", cursor: "pointer",
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              {/* Room sections */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+                {visibleRooms.map((roomGroup) => (
+                  <div key={roomGroup.roomName}>
+                    {/* Section header */}
+                    <div style={{ padding: "10px 16px 6px", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>#{roomGroup.roomName}</span>
+                      <span style={{ fontSize: 12, color: "#9ca3af" }}>（{roomGroup.members.length}人）</span>
+                    </div>
+                    {/* Members */}
+                    {roomGroup.members.map((member) => (
+                      <div key={member.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid #f9fafb" }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#6b7280", flexShrink: 0 }}>
+                          {member.name[0]}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 3 }}>{member.name}</p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {member.tags.map((tag) => (
+                              <span key={tag} style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 999, padding: "2px 8px", color: "#6b7280" }}>
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Create room modal — shared across both tabs */}
       {isModalOpen && (
