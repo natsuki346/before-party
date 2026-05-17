@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 type ChatItem = {
   match_id: string;
@@ -55,7 +56,13 @@ export default function ChatsPage() {
       style={{ maxWidth: "390px", margin: "0 auto", height: "calc(100dvh - 60px)" }}
     >
       {/* Header */}
-      <div className="shrink-0 h-12 flex items-center px-4 border-b border-gray-100">
+      <div className="shrink-0 h-12 flex items-center gap-2 px-3 border-b border-gray-100">
+        <Link
+          href={`/e/${inviteCode}/members`}
+          className="p-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-100 transition-colors"
+        >
+          <ArrowLeft size={18} className="text-gray-700" />
+        </Link>
         <h1 className="text-sm font-bold text-gray-900">トーク</h1>
       </div>
 
