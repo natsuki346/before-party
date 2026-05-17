@@ -149,6 +149,7 @@ export default function MembersList({
     maxWidth: "390px",
     margin: "0 auto",
     height: "100dvh",
+    overflow: "hidden",
     background: "linear-gradient(135deg, #f5f0eb 0%, #ede8e3 100%)",
   };
 
@@ -170,12 +171,12 @@ export default function MembersList({
 
   const matchColor = getMatchColor(card.score);
 
-  const translateX = flyOut ? (flyOut === "right" ? 400 : -400) : dragX;
-  const rotate = flyOut ? (flyOut === "right" ? 25 : -25) : dragX * 0.04;
+  const translateX = flyOut ? (flyOut === "right" ? 350 : -350) : dragX;
+  const rotate = flyOut ? (flyOut === "right" ? 15 : -15) : dragX * 0.04;
 
   const swipeTransform = `translateX(${translateX}px) rotate(${rotate}deg)`;
   const swipeTransition = flyOut
-    ? "transform 0.32s ease-out"
+    ? "transform 0.25s ease-out"
     : isDragging
       ? "none"
       : "transform 0.2s ease-out";
