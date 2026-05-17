@@ -152,7 +152,7 @@ export default function MembersList({
     margin: "0 auto",
     height: "100dvh",
     overflow: "hidden",
-    background: "linear-gradient(135deg, #f5f0eb 0%, #ede8e3 100%)",
+    background: "linear-gradient(135deg, #fdf6f0 0%, #f0edf8 50%, #edf4fb 100%)",
   };
 
   const emptyScreen = (icon: string, title: string, body: string) => (
@@ -290,7 +290,7 @@ export default function MembersList({
           onMouseUp={() => { setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
           onMouseLeave={() => { if (!isDragging) return; setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
         >
-          <div className="w-full h-full rounded-2xl overflow-hidden relative" style={{ background: getMatchBg(card.score, index, cards.length), backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,0.5)", borderRight: "1px solid rgba(255,255,255,0.5)", borderBottom: "1px solid rgba(255,255,255,0.5)", borderLeft: `4px solid ${matchColor}`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
+          <div className="w-full h-full overflow-hidden relative" style={{ background: "rgba(255,255,255,0.45)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderRadius: "24px", borderTop: "1px solid rgba(255,255,255,0.9)", borderRight: "1px solid rgba(255,255,255,0.6)", borderBottom: "1px solid rgba(255,255,255,0.3)", borderLeft: `4px solid ${matchColor}`, boxShadow: "0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)" }}>
 
             {/* LIKE overlay */}
             <div
@@ -333,7 +333,6 @@ export default function MembersList({
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: "85%", backgroundColor: matchColor }} />
                 </div>
-                <p style={{ fontSize: "10px", color: "red" }}>score: {card.score}</p>
               </div>
 
               {/* 1. 名前 */}
