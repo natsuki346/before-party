@@ -193,9 +193,10 @@ export default function MembersPage() {
           </p>
         ) : (
           filteredMembers.map((member, i) => (
-            <div
+            <Link
               key={i}
-              className="flex items-center gap-3 px-4 py-3 border-b border-gray-50"
+              href={`/e/${inviteCode}/rooms/channels/members/${encodeURIComponent(member.name)}`}
+              className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-50 transition-colors"
             >
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 shrink-0">
                 {member.name[0]}
@@ -220,7 +221,7 @@ export default function MembersPage() {
                   })}
                 </div>
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>
