@@ -415,7 +415,7 @@ export default function MembersList({
         <button
           onClick={() => swipe("left")}
           disabled={flyOut !== null}
-          className="w-14 h-14 rounded-full border-2 border-red-300 bg-white flex items-center justify-center text-xl shadow-md active:scale-90 transition-transform disabled:opacity-40"
+          className="w-14 h-14 rounded-full border-2 border-red-400 bg-white flex items-center justify-center text-xl text-red-400 shadow-md active:scale-90 transition-transform disabled:opacity-40"
           aria-label="スキップ"
         >
           ✕
