@@ -6,9 +6,9 @@ import { Bell, MessageCircle } from "lucide-react";
 import { useSidebar } from "../SidebarContext";
 
 const ROOMS = [
-  { invite_code: "test-event", title: "テストイベント", count: 4  },
-  { invite_code: "ai-meetup",  title: "AI勉強会",       count: 8  },
-  { invite_code: "startup-lt", title: "起業家LT会",     count: 12 },
+  { invite_code: "test-event", title: "テストイベント", date: "6月1日 18:00",  count: 4  },
+  { invite_code: "ai-meetup",  title: "AI勉強会",       date: "6月15日 19:00", count: 8  },
+  { invite_code: "startup-lt", title: "起業家LT会",     date: "7月1日 18:30",  count: 12 },
 ];
 
 // ── 時間帯背景（new-sync-app / bubble-v2 の実装を流用） ─────────────────
@@ -35,11 +35,13 @@ const FRAME_PAD = 5;
 // ─── Single door ──────────────────────────────────────────────────────────────
 function HallwayDoor({
   title,
+  date,
   count,
   isActive,
   isOpening,
 }: {
   title: string;
+  date: string;
   count: number;
   isActive: boolean;
   isOpening: boolean;
@@ -119,6 +121,18 @@ function HallwayDoor({
               }}
             >
               {title}
+            </p>
+
+            {/* Date */}
+            <p
+              style={{
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "11px",
+                textAlign: "center",
+                marginTop: "4px",
+              }}
+            >
+              {date}
             </p>
 
             {/* Doorknob — gold circle, right side slightly below center */}
@@ -356,6 +370,7 @@ export default function RoomSelection({
             <HallwayDoor
               key={room.invite_code}
               title={room.title}
+              date={room.date}
               count={room.count}
               isActive={i === roomIdx}
               isOpening={isOpening}
