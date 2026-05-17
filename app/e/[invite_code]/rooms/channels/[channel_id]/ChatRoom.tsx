@@ -7,11 +7,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { Room, RoomMessage } from "@/lib/supabase/types";
 
 const DUMMY_MEMBERS = [
-  { name: "田中 太郎", tags: ["エンジニア", "成長", "挑戦"], connected: false },
-  { name: "佐藤 花子", tags: ["UIデザイン", "自由", "時間管理"], connected: true },
-  { name: "鈴木 一郎", tags: ["起業家", "貢献", "スキルアップ"], connected: false },
-  { name: "山田 美咲", tags: ["マーケター", "安定", "人間関係"], connected: false },
-  { name: "伊藤 健",   tags: ["フリーランス", "創造", "キャリア"], connected: false },
+  { display_name: "田中 太郎", profiles: { life_stage: "社会人（会社員）", work_context: "エンジニア",  values: ["成長", "挑戦"] } },
+  { display_name: "佐藤 花子", profiles: { life_stage: "フリーランス",      work_context: "UIデザイン",  values: ["自由", "創造"] } },
+  { display_name: "鈴木 一郎", profiles: { life_stage: "起業家",            work_context: "経営者",      values: ["貢献", "挑戦"] } },
+  { display_name: "山田 美咲", profiles: { life_stage: "社会人（会社員）", work_context: "マーケター",  values: ["安定", "つながり"] } },
+  { display_name: "伊藤 健",   profiles: { life_stage: "フリーランス",      work_context: "バックエンド", values: ["効率", "成長"] } },
 ];
 
 // NamePrompt — shown once when senderName is not yet set
@@ -102,6 +102,7 @@ export default function ChatRoom({
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -143,6 +144,45 @@ export default function ChatRoom({
     return () => { supabase.removeChannel(channel); };
   }, [room.id, isDummy]);
 
+  // Record room entry in room_participants
+  useEffect(() => {
+    if (isDummy) return;
+    const participantId = localStorage.getItem(`participant_${inviteCode}`);
+    const name = localStorage.getItem(`chat_name_${inviteCode}`) || "ゲスト";
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any).from("room_participants").upsert({
+      room_id: room.id,
+      participant_id: participantId || null,
+      display_name: name,
+    }, { onConflict: "room_id,participant_id" }).then(() => {});
+  }, [room.id, inviteCode, isDummy]);
+
+  // Fetch members when panel opens
+  useEffect(() => {
+    if (!showMembers || isDummy) {
+      if (isDummy) setMembers(DUMMY_MEMBERS);
+      return;
+    }
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("room_participants")
+      .select(`
+        display_name,
+        participant_id,
+        profiles (
+          life_stage,
+          work_context,
+          values
+        )
+      `)
+      .eq("room_id", room.id)
+      .then(({ data }: { data: any[] | null }) => {
+        if (data) setMembers(data);
+      });
+  }, [showMembers, room.id, isDummy]);
+
   const send = async () => {
     const text = content.trim();
     if (!text || isSending) return;
@@ -176,7 +216,6 @@ export default function ChatRoom({
         .single();
 
       if (error) {
-        // Revert optimistic update
         setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         setContent(text);
       } else if (data) {
@@ -200,152 +239,116 @@ export default function ChatRoom({
   };
 
   return (
-    <main
-      className="flex flex-col overflow-hidden bg-gray-50"
-      style={{ maxWidth: "390px", margin: "0 auto", height: "calc(100dvh - 60px)" }}
-    >
-      {/* Header */}
-      <div className="shrink-0 h-12 flex items-center gap-2 px-3 bg-white border-b border-gray-100">
-        <Link
-          href={`/e/${inviteCode}/rooms/channels`}
-          className="p-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-100 transition-colors"
-          aria-label="戻る"
-        >
-          <ArrowLeft size={18} className="text-gray-700" />
-        </Link>
-        <span className="text-gray-400 text-base">#</span>
-        <h1 className="text-sm font-bold text-gray-900 truncate">{room.name}</h1>
-        <button
-          onClick={() => setShowMembers(true)}
-          className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-          aria-label="メンバー一覧"
-        >
-          <Users size={18} className="text-gray-700" />
-        </button>
-      </div>
-
-      {/* Name prompt banner */}
-      {showNamePrompt && (
-        <NamePrompt onSave={saveName} onClose={() => setShowNamePrompt(false)} />
-      )}
-
-      {/* Message list */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
-        {messages.length === 0 && (
-          <p className="text-center text-xs text-gray-400 mt-10">
-            まだメッセージがありません。<br />最初の一言を送ってみましょう！
-          </p>
-        )}
-        {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isMine={msg.sender_name === senderName}
-          />
-        ))}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input area */}
-      <div className="shrink-0 bg-white border-t border-gray-100 px-3 py-2.5 flex items-center gap-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-          placeholder={senderName ? "メッセージを入力" : "名前を設定して送信できます"}
-          className="flex-1 bg-white border border-gray-200 rounded-2xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
-        />
-        <button
-          onClick={send}
-          disabled={!content.trim() || isSending}
-          className="w-9 h-9 bg-black rounded-full flex items-center justify-center shrink-0 disabled:opacity-30 active:opacity-70 transition-opacity"
-          aria-label="送信"
-        >
-          <Send size={14} className="text-white" strokeWidth={2.5} />
-        </button>
-      </div>
-      {/* Members bottom sheet */}
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 60,
-          display: showMembers ? "flex" : "none",
-          alignItems: "flex-end",
-          justifyContent: "center",
-        }}
+    <>
+      <main
+        className="flex flex-col overflow-hidden bg-gray-50"
+        style={{ maxWidth: "390px", margin: "0 auto", height: "calc(100dvh - 60px)" }}
       >
-        {/* Overlay */}
-        <div
-          style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setShowMembers(false)}
-        />
-        {/* Panel */}
-        <div style={{
-          position: "relative",
-          width: "390px",
-          maxHeight: "70dvh",
-          background: "white",
-          borderRadius: "20px 20px 0 0",
-          display: "flex",
-          flexDirection: "column",
-          zIndex: 1,
-        }}>
-          {/* Handle */}
-          <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto 0" }} />
-          {/* Title */}
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6" }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>このルームのメンバー</h2>
-          </div>
-          {/* Member list */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
-            {DUMMY_MEMBERS.map((member) => (
-              <div key={member.name} style={{
-                display: "flex", alignItems: "center",
-                padding: "12px 16px", gap: 12,
-                borderBottom: "1px solid #f9fafb",
-              }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: "50%",
-                  background: "#f3f4f6", display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                  fontSize: 16, fontWeight: 700, color: "#6b7280",
-                  flexShrink: 0,
-                }}>
-                  {member.name[0]}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 4 }}>
-                    {member.name}
-                  </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                    {member.tags.map((tag) => (
-                      <span key={tag} style={{
-                        fontSize: 11, color: "#6b7280",
-                        background: "#f3f4f6",
-                        borderRadius: 999, padding: "2px 8px",
-                      }}>
-                        #{tag}
-                      </span>
-                    ))}
+        {/* Header */}
+        <div className="shrink-0 h-12 flex items-center gap-2 px-3 bg-white border-b border-gray-100">
+          <Link
+            href={`/e/${inviteCode}/rooms/channels`}
+            className="p-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-100 transition-colors"
+            aria-label="戻る"
+          >
+            <ArrowLeft size={18} className="text-gray-700" />
+          </Link>
+          <span className="text-gray-400 text-base">#</span>
+          <h1 className="text-sm font-bold text-gray-900 truncate">{room.name}</h1>
+          <button
+            onClick={() => setShowMembers(true)}
+            className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="メンバー一覧"
+          >
+            <Users size={18} className="text-gray-700" />
+          </button>
+        </div>
+
+        {/* Name prompt banner */}
+        {showNamePrompt && (
+          <NamePrompt onSave={saveName} onClose={() => setShowNamePrompt(false)} />
+        )}
+
+        {/* Message list */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+          {messages.length === 0 && (
+            <p className="text-center text-xs text-gray-400 mt-10">
+              まだメッセージがありません。<br />最初の一言を送ってみましょう！
+            </p>
+          )}
+          {messages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isMine={msg.sender_name === senderName}
+            />
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input area */}
+        <div className="shrink-0 bg-white border-t border-gray-100 px-3 py-2.5 flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
+            placeholder={senderName ? "メッセージを入力" : "名前を設定して送信できます"}
+            className="flex-1 bg-white border border-gray-200 rounded-2xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
+          />
+          <button
+            onClick={send}
+            disabled={!content.trim() || isSending}
+            className="w-9 h-9 bg-black rounded-full flex items-center justify-center shrink-0 disabled:opacity-30 active:opacity-70 transition-opacity"
+            aria-label="送信"
+          >
+            <Send size={14} className="text-white" strokeWidth={2.5} />
+          </button>
+        </div>
+      </main>
+
+      {/* Members bottom sheet */}
+      {showMembers && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} onClick={() => setShowMembers(false)} />
+          <div style={{ position: "relative", width: "390px", maxHeight: "75dvh", background: "white", borderRadius: "20px 20px 0 0", display: "flex", flexDirection: "column", zIndex: 1 }}>
+            <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto 0" }} />
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700 }}>メンバー ({members.length}人)</h2>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+              {members.map((m, i) => (
+                <div key={i} style={{ padding: "12px 16px", borderBottom: "1px solid #f9fafb", display: "flex", gap: 12, alignItems: "center" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#6b7280", flexShrink: 0 }}>
+                    {m.display_name[0]}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{m.display_name}</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {m.profiles?.life_stage && (
+                        <span style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 999, padding: "2px 8px", color: "#6b7280" }}>
+                          #{m.profiles.life_stage}
+                        </span>
+                      )}
+                      {m.profiles?.work_context && (
+                        <span style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 999, padding: "2px 8px", color: "#6b7280" }}>
+                          #{m.profiles.work_context}
+                        </span>
+                      )}
+                      {(m.profiles?.values ?? []).map((v: string) => (
+                        <span key={v} style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 999, padding: "2px 8px", color: "#6b7280" }}>
+                          #{v}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <button style={{
-                  fontSize: 12, fontWeight: 600,
-                  color: member.connected ? "#9ca3af" : "#111827",
-                  border: `1px solid ${member.connected ? "#e5e7eb" : "#111827"}`,
-                  borderRadius: 999, padding: "4px 12px",
-                  background: "white", cursor: "pointer", flexShrink: 0,
-                }}>
-                  {member.connected ? "済み" : "つながる"}
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      )}
+    </>
   );
 }
