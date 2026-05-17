@@ -6,19 +6,21 @@ import { ArrowLeft, Bell, ChevronLeft, ChevronRight, MessageCircle } from "lucid
 import type { Event, ParticipantWithProfile } from "@/lib/supabase/types";
 import RoomSelection from "./RoomSelection";
 
-function getMatchColor(score: number): string {
-  if (score >= 50) return "#ef4444";
-  if (score >= 35) return "#f97316";
-  if (score >= 20) return "#eab308";
-  if (score >= 10) return "#3b82f6";
+function getMatchColor(score: number, index: number, total: number): string {
+  const rank = score > 0 ? score : Math.max(0, total - index) * 10;
+  if (rank >= 50) return "#ef4444";
+  if (rank >= 35) return "#f97316";
+  if (rank >= 20) return "#eab308";
+  if (rank >= 10) return "#3b82f6";
   return "#6366f1";
 }
 
-function getMatchBg(score: number): string {
-  if (score >= 50) return "rgba(239, 68, 68, 0.06)";
-  if (score >= 35) return "rgba(249, 115, 22, 0.06)";
-  if (score >= 20) return "rgba(234, 179, 8, 0.06)";
-  if (score >= 10) return "rgba(59, 130, 246, 0.06)";
+function getMatchBg(score: number, index: number, total: number): string {
+  const rank = score > 0 ? score : Math.max(0, total - index) * 10;
+  if (rank >= 50) return "rgba(239, 68, 68, 0.06)";
+  if (rank >= 35) return "rgba(249, 115, 22, 0.06)";
+  if (rank >= 20) return "rgba(234, 179, 8, 0.06)";
+  if (rank >= 10) return "rgba(59, 130, 246, 0.06)";
   return "rgba(99, 102, 241, 0.06)";
 }
 
@@ -169,7 +171,7 @@ export default function MembersList({
   if (!card)
     return emptyScreen("🎉", "全員チェック済み！", "全員のプロフィールを確認しました。");
 
-  const matchColor = getMatchColor(card.score);
+  const matchColor = getMatchColor(card.score, index, cards.length);
 
   const translateX = flyOut ? (flyOut === "right" ? 350 : -350) : dragX;
   const rotate = flyOut ? (flyOut === "right" ? 15 : -15) : dragX * 0.04;
@@ -288,7 +290,7 @@ export default function MembersList({
           onMouseUp={() => { setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
           onMouseLeave={() => { if (!isDragging) return; setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
         >
-          <div className="w-full h-full rounded-2xl overflow-hidden relative" style={{ background: getMatchBg(card.score), backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,0.5)", borderRight: "1px solid rgba(255,255,255,0.5)", borderBottom: "1px solid rgba(255,255,255,0.5)", borderLeft: `4px solid ${matchColor}`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
+          <div className="w-full h-full rounded-2xl overflow-hidden relative" style={{ background: getMatchBg(card.score, index, cards.length), backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,0.5)", borderRight: "1px solid rgba(255,255,255,0.5)", borderBottom: "1px solid rgba(255,255,255,0.5)", borderLeft: `4px solid ${matchColor}`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
 
             {/* LIKE overlay */}
             <div
@@ -331,6 +333,7 @@ export default function MembersList({
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: "85%", backgroundColor: matchColor }} />
                 </div>
+                <p style={{ fontSize: "10px", color: "red" }}>score: {card.score}</p>
               </div>
 
               {/* 1. 名前 */}
