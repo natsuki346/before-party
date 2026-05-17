@@ -11,6 +11,19 @@ const ROOMS = [
   { invite_code: "startup-lt", title: "起業家LT会",     count: 12 },
 ];
 
+// ── 時間帯背景（new-sync-app / bubble-v2 の実装を流用） ─────────────────
+type ToD = "morning" | "day" | "evening" | "night";
+
+const TIME_BG: Record<ToD, string> = {
+  morning: "linear-gradient(185deg,#3A8CC0 0%,#70B8DA 16%,#F8CE70 42%,#FFC090 62%,#FFE4CC 82%,#FFF8F0 100%)",
+  day:     "linear-gradient(180deg,#0C5A9C 0%,#2880BC 22%,#4CAAD8 48%,#94CDE8 72%,#D4ECFA 90%,#EEF8FF 100%)",
+  evening: "linear-gradient(185deg,#040114 0%,#180448 12%,#560878 28%,#B0165A 50%,#E43018 68%,#F87028 84%,#FFAE40 100%)",
+  night:   "linear-gradient(190deg,#010108 0%,#030318 28%,#070540 58%,#040320 80%,#010108 100%)",
+};
+
+const getToD = (h: number): ToD =>
+  h >= 5 && h < 10 ? "morning" : h >= 10 && h < 17 ? "day" : h >= 17 && h < 20 ? "evening" : "night";
+
 // Door width = 55% of 390px ≈ 215px
 const CARD_W    = 215;
 const GAP       = 18;
@@ -248,6 +261,8 @@ export default function RoomSelection({
     setDragX(0);
   };
 
+  const tod = getToD(new Date().getHours());
+
   const handleEnter = () => {
     if (isOpening) return;
     setIsOpening(true);                          // 1. panels start opening (0.4s)
@@ -262,7 +277,7 @@ export default function RoomSelection({
         maxWidth: "390px",
         margin: "0 auto",
         height: "100dvh",
-        backgroundColor: "#ffffff",
+        background: TIME_BG[tod],
       }}
     >
       {/* Header */}
