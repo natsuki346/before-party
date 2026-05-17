@@ -2,9 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Room, RoomMessage } from "@/lib/supabase/types";
+
+const DUMMY_MEMBERS = [
+  { name: "田中 太郎", tags: ["エンジニア", "成長", "挑戦"], connected: false },
+  { name: "佐藤 花子", tags: ["UIデザイン", "自由", "時間管理"], connected: true },
+  { name: "鈴木 一郎", tags: ["起業家", "貢献", "スキルアップ"], connected: false },
+  { name: "山田 美咲", tags: ["マーケター", "安定", "人間関係"], connected: false },
+  { name: "伊藤 健",   tags: ["フリーランス", "創造", "キャリア"], connected: false },
+];
 
 // NamePrompt — shown once when senderName is not yet set
 function NamePrompt({
@@ -93,6 +101,7 @@ export default function ChatRoom({
   const [senderName, setSenderName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -206,6 +215,13 @@ export default function ChatRoom({
         </Link>
         <span className="text-gray-400 text-base">#</span>
         <h1 className="text-sm font-bold text-gray-900 truncate">{room.name}</h1>
+        <button
+          onClick={() => setShowMembers(true)}
+          className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="メンバー一覧"
+        >
+          <Users size={18} className="text-gray-700" />
+        </button>
       </div>
 
       {/* Name prompt banner */}
@@ -249,6 +265,86 @@ export default function ChatRoom({
         >
           <Send size={14} className="text-white" strokeWidth={2.5} />
         </button>
+      </div>
+      {/* Members bottom sheet */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 60,
+          display: showMembers ? "flex" : "none",
+          alignItems: "flex-end",
+          justifyContent: "center",
+        }}
+      >
+        {/* Overlay */}
+        <div
+          style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }}
+          onClick={() => setShowMembers(false)}
+        />
+        {/* Panel */}
+        <div style={{
+          position: "relative",
+          width: "390px",
+          maxHeight: "70dvh",
+          background: "white",
+          borderRadius: "20px 20px 0 0",
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 1,
+        }}>
+          {/* Handle */}
+          <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto 0" }} />
+          {/* Title */}
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6" }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>このルームのメンバー</h2>
+          </div>
+          {/* Member list */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+            {DUMMY_MEMBERS.map((member) => (
+              <div key={member.name} style={{
+                display: "flex", alignItems: "center",
+                padding: "12px 16px", gap: 12,
+                borderBottom: "1px solid #f9fafb",
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: "#f3f4f6", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  fontSize: 16, fontWeight: 700, color: "#6b7280",
+                  flexShrink: 0,
+                }}>
+                  {member.name[0]}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 4 }}>
+                    {member.name}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {member.tags.map((tag) => (
+                      <span key={tag} style={{
+                        fontSize: 11, color: "#6b7280",
+                        background: "#f3f4f6",
+                        borderRadius: 999, padding: "2px 8px",
+                      }}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: member.connected ? "#9ca3af" : "#111827",
+                  border: `1px solid ${member.connected ? "#e5e7eb" : "#111827"}`,
+                  borderRadius: 999, padding: "4px 12px",
+                  background: "white", cursor: "pointer", flexShrink: 0,
+                }}>
+                  {member.connected ? "済み" : "つながる"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   );
