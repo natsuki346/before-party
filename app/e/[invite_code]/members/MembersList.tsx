@@ -290,10 +290,8 @@ export default function MembersList({
           onMouseUp={() => { setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
           onMouseLeave={() => { if (!isDragging) return; setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
         >
-          <div className="w-full h-full overflow-hidden" style={{ position: "relative", background: `linear-gradient(160deg, ${matchColor}22 0%, ${matchColor}08 100%)`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderRadius: "28px", borderTop: `2px solid ${matchColor}66`, borderRight: `1px solid ${matchColor}33`, borderBottom: `1px solid ${matchColor}22`, borderLeft: `4px solid ${matchColor}`, boxShadow: `0 2px 0 rgba(255,255,255,0.9) inset, 0 20px 40px ${matchColor}20, 0 4px 16px ${matchColor}15` }}>
+          <div className="w-full h-full overflow-hidden" style={{ position: "relative", background: `linear-gradient(160deg, ${matchColor}22 0%, ${matchColor}08 100%)`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderRadius: "28px", borderTop: `1px solid ${matchColor}44`, borderRight: `1px solid ${matchColor}33`, borderBottom: `1px solid ${matchColor}22`, borderLeft: `4px solid ${matchColor}`, boxShadow: `0 2px 0 rgba(255,255,255,0.9) inset, 0 20px 40px ${matchColor}20, 0 4px 16px ${matchColor}15` }}>
 
-            {/* Gloss highlight */}
-            <div style={{ position: "absolute", top: 0, left: "8%", right: "8%", height: "35%", background: "linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 100%)", borderRadius: "0 0 50% 50%", pointerEvents: "none", zIndex: 2 }} />
 
             {/* LIKE overlay */}
             <div
