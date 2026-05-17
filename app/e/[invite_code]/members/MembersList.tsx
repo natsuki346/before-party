@@ -152,7 +152,7 @@ export default function MembersList({
     margin: "0 auto",
     height: "100dvh",
     overflow: "hidden",
-    background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #d4b8f0 100%)",
+    background: "linear-gradient(135deg, #f5f0eb 0%, #ede8e3 100%)",
   };
 
   const emptyScreen = (icon: string, title: string, body: string) => (
@@ -290,10 +290,10 @@ export default function MembersList({
           onMouseUp={() => { setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
           onMouseLeave={() => { if (!isDragging) return; setIsDragging(false); if (Math.abs(dragX) >= SWIPE_THRESHOLD) swipe(dragX > 0 ? "right" : "left"); else setDragX(0); }}
         >
-          <div className="w-full h-full overflow-hidden" style={{ position: "relative", background: "linear-gradient(160deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderRadius: "28px", borderTop: "2px solid rgba(255,255,255,0.95)", borderRight: "1px solid rgba(255,255,255,0.5)", borderBottom: "1px solid rgba(255,255,255,0.2)", borderLeft: `4px solid ${matchColor}`, boxShadow: `0 2px 0 rgba(255,255,255,0.8) inset, 0 -1px 0 rgba(0,0,0,0.05) inset, 0 20px 60px rgba(0,0,0,0.1), 0 4px 16px ${matchColor}33` }}>
+          <div className="w-full h-full overflow-hidden" style={{ position: "relative", background: `linear-gradient(160deg, ${matchColor}22 0%, ${matchColor}08 100%)`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderRadius: "28px", borderTop: `2px solid ${matchColor}66`, borderRight: `1px solid ${matchColor}33`, borderBottom: `1px solid ${matchColor}22`, borderLeft: `4px solid ${matchColor}`, boxShadow: `0 2px 0 rgba(255,255,255,0.9) inset, 0 20px 40px ${matchColor}20, 0 4px 16px ${matchColor}15` }}>
 
             {/* Gloss highlight */}
-            <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: "40%", background: "linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 100%)", borderRadius: "0 0 50% 50%", pointerEvents: "none", zIndex: 2 }} />
+            <div style={{ position: "absolute", top: 0, left: "8%", right: "8%", height: "35%", background: "linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 100%)", borderRadius: "0 0 50% 50%", pointerEvents: "none", zIndex: 2 }} />
 
             {/* LIKE overlay */}
             <div
@@ -413,12 +413,11 @@ export default function MembersList({
       </div>
 
       {/* Button area — 80px for buttons + 60px spacer for fixed bottom nav */}
-      <div className="shrink-0 h-[80px] flex items-center justify-center gap-10" style={{ background: "transparent" }}>
+      <div className="shrink-0 h-[80px] flex items-center justify-center gap-10">
         <button
           onClick={() => swipe("left")}
           disabled={flyOut !== null}
-          className="w-14 h-14 rounded-full border-2 border-red-300 flex items-center justify-center text-xl shadow-md active:scale-90 transition-transform disabled:opacity-40"
-          style={{ background: "rgba(255,255,255,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+          className="w-14 h-14 rounded-full border-2 border-red-300 bg-white flex items-center justify-center text-xl shadow-md active:scale-90 transition-transform disabled:opacity-40"
           aria-label="スキップ"
         >
           ✕
@@ -426,8 +425,7 @@ export default function MembersList({
         <button
           onClick={() => swipe("right")}
           disabled={flyOut !== null}
-          className="w-14 h-14 rounded-full border-2 border-green-300 flex items-center justify-center text-xl shadow-md active:scale-90 transition-transform disabled:opacity-40"
-          style={{ background: "rgba(255,255,255,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+          className="w-14 h-14 rounded-full border-2 border-green-300 bg-white flex items-center justify-center text-xl shadow-md active:scale-90 transition-transform disabled:opacity-40"
           aria-label="気になる"
         >
           ❤️
