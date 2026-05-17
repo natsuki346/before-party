@@ -116,7 +116,7 @@ export default function EventLayout({
                 className="flex items-center gap-3 px-5 py-3.5 text-sm text-gray-800 hover:bg-gray-50 active:bg-gray-50 transition-colors"
               >
                 <span className="text-base">👤</span>
-                <span>設定</span>
+                <span>プロフィール</span>
               </Link>
               <Link
                 href={`/e/${invite_code}/history`}
