@@ -204,10 +204,18 @@ export default function ChannelList({
       {/* Create room modal — shared across both tabs */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
           onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}
         >
-          <div className="bg-white rounded-t-3xl w-full max-w-[390px] px-6 pt-6 pb-10">
+          <div
+            style={{
+              position: "relative",
+              width: "calc(390px - 32px)",
+              borderRadius: 16,
+              padding: 20,
+              background: "white",
+            }}
+          >
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-bold">ルームを作る</h2>
               <button
