@@ -54,7 +54,7 @@ const WORK_CATEGORIES = [
   },
 ];
 
-const SECTIONS = ["基本情報", "ライフステージ", "仕事・職種", "価値観", "カスタムタグ", "アカウント"] as const;
+const SECTIONS = ["基本情報", "ライフステージ", "仕事・職種", "価値観", "アカウント"] as const;
 type Section = typeof SECTIONS[number];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -100,6 +100,56 @@ function SaveButton({ saved, isSaving, onClick }: { saved: boolean; isSaving: bo
   );
 }
 
+// ─── SearchBar ─────────────────────────────────────────────────────────────
+function SearchBar({
+  searchQuery,
+  setSearchQuery,
+  onAdd,
+}: {
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+  onAdd: (tag: string) => void;
+}) {
+  // Stable dummy count based on query string (avoids random flicker on re-render)
+  const dummyCount = searchQuery.trim()
+    ? (searchQuery.trim().length * 7 % 29) + 1
+    : 0;
+
+  return (
+    <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #e5e7eb", borderRadius: 12, padding: "8px 12px" }}>
+        <span style={{ color: "#9ca3af" }}>🔍</span>
+        <input
+          type="text"
+          placeholder="タグを検索・追加..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ flex: 1, outline: "none", fontSize: 14, color: "#111827", background: "transparent" }}
+        />
+        {searchQuery.trim() && (
+          <button
+            onClick={() => setSearchQuery("")}
+            style={{ color: "#9ca3af", fontSize: 14, background: "none", border: "none", cursor: "pointer" }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      {searchQuery.trim() && (
+        <div style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
+          「{searchQuery.trim()}」を追加中の人: {dummyCount}人
+          <button
+            onClick={() => { onAdd(searchQuery.trim()); setSearchQuery(""); }}
+            style={{ marginLeft: 8, fontSize: 12, color: "#111827", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+          >
+            + 追加
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function SettingsEditPage() {
   const params = useParams();
@@ -119,8 +169,12 @@ export default function SettingsEditPage() {
   const [activeSection, setActiveSection] = useState<Section>("基本情報");
   const [workCategoryIdx, setWorkCategoryIdx] = useState(0);
   const [openJob, setOpenJob] = useState<string | null>(null);
-  const [customTags, setCustomTags] = useState<string[]>([]);
-  const [customInput, setCustomInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [customTagsBySection, setCustomTagsBySection] = useState<Record<string, string[]>>({
+    "ライフステージ": [],
+    "価値観": [],
+    "仕事・職種": [],
+  });
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -137,7 +191,8 @@ export default function SettingsEditPage() {
           supabase.from("profiles").select("*").eq("participant_id", participantId).single(),
         ]);
         const allValues = prof?.values ?? [];
-        setCustomTags(allValues.filter((v) => !VALUES_OPTIONS.includes(v)));
+        const customValues = allValues.filter((v) => !VALUES_OPTIONS.includes(v));
+        setCustomTagsBySection((prev) => ({ ...prev, 価値観: customValues }));
         setProfile({
           name: participant?.name ?? "",
           life_stage: prof?.life_stage ?? "",
@@ -149,6 +204,16 @@ export default function SettingsEditPage() {
       setIsLoading(false);
     })();
   }, [inviteCode]);
+
+  // Reset search when section changes
+  useEffect(() => { setSearchQuery(""); }, [activeSection]);
+
+  const addCustomTag = (section: string, tag: string) => {
+    setCustomTagsBySection((prev) => ({
+      ...prev,
+      [section]: prev[section]?.includes(tag) ? prev[section] : [...(prev[section] ?? []), tag],
+    }));
+  };
 
   // work_context stored as comma-separated detail labels
   const selectedWorkDetails = profile.work_context
@@ -162,10 +227,7 @@ export default function SettingsEditPage() {
     setProfile((p) => ({ ...p, work_context: updated.join(", ") }));
   };
 
-  const flash = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+  const flash = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   const saveSection = async () => {
     if (isSaving) return;
@@ -181,9 +243,7 @@ export default function SettingsEditPage() {
       } else if (activeSection === "仕事・職種") {
         await supabase.from("profiles").upsert({ participant_id: participantId, work_context: profile.work_context || null });
       } else if (activeSection === "価値観") {
-        await supabase.from("profiles").upsert({ participant_id: participantId, values: profile.values.length ? profile.values : null });
-      } else if (activeSection === "カスタムタグ") {
-        const merged = [...profile.values, ...customTags];
+        const merged = [...profile.values, ...(customTagsBySection["価値観"] ?? [])];
         await supabase.from("profiles").upsert({ participant_id: participantId, values: merged.length ? merged : null });
       }
     } catch { /* ignore */ }
@@ -233,10 +293,19 @@ export default function SettingsEditPage() {
         );
 
       // ── ライフステージ ──
-      case "ライフステージ":
+      case "ライフステージ": {
+        const q = searchQuery.trim().toLowerCase();
+        const filtered = q ? LIFE_STAGES.filter((s) => s.toLowerCase().includes(q)) : LIFE_STAGES;
+        const customInSection = customTagsBySection["ライフステージ"] ?? [];
+        const filteredCustom = q ? customInSection.filter((s) => s.toLowerCase().includes(q)) : customInSection;
         return (
           <div className="flex flex-col">
-            {LIFE_STAGES.map((s) => {
+            <SearchBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onAdd={(tag) => addCustomTag("ライフステージ", tag)}
+            />
+            {filtered.map((s) => {
               const selected = profile.life_stage === s;
               return (
                 <button
@@ -251,16 +320,34 @@ export default function SettingsEditPage() {
                 </button>
               );
             })}
+            {filteredCustom.map((tag) => (
+              <div key={tag} className="flex items-center justify-between px-4 border-b border-gray-100 bg-gray-50/50" style={{ height: "48px" }}>
+                <span className="text-sm text-gray-700"># {tag}</span>
+                <button
+                  type="button"
+                  onClick={() => setCustomTagsBySection((prev) => ({ ...prev, ライフステージ: (prev["ライフステージ"] ?? []).filter((t) => t !== tag) }))}
+                  className="text-gray-400 active:opacity-60"
+                >✕</button>
+              </div>
+            ))}
             <div className="p-4">
               <SaveButton saved={saved} isSaving={isSaving} onClick={saveSection} />
             </div>
           </div>
         );
+      }
 
       // ── 仕事・職種 ──
-      case "仕事・職種":
+      case "仕事・職種": {
+        const q = searchQuery.trim().toLowerCase();
+        const customInSection = customTagsBySection["仕事・職種"] ?? [];
         return (
           <div className="flex flex-col">
+            <SearchBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onAdd={(tag) => addCustomTag("仕事・職種", tag)}
+            />
             {/* Big category tabs */}
             <div
               className="px-4 py-3 border-b border-gray-100"
@@ -280,34 +367,48 @@ export default function SettingsEditPage() {
                 ))}
               </div>
             </div>
-            {WORK_CATEGORIES[workCategoryIdx].jobs.map((job) => (
-              <div key={job.label}>
+            {WORK_CATEGORIES[workCategoryIdx].jobs.map((job) => {
+              const filteredDetails = q ? job.details.filter((d) => d.toLowerCase().includes(q)) : job.details;
+              if (q && filteredDetails.length === 0) return null;
+              return (
+                <div key={job.label}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenJob(openJob === job.label ? null : job.label)}
+                    className="w-full flex items-center justify-between px-4 border-b border-gray-100 bg-white active:bg-gray-50 transition-colors"
+                    style={{ height: "48px" }}
+                  >
+                    <span className="text-sm text-gray-900">{job.label}</span>
+                    {openJob === job.label
+                      ? <ChevronDown size={16} className="text-gray-400 shrink-0" />
+                      : <ChevronRight size={16} className="text-gray-400 shrink-0" />}
+                  </button>
+                  {(openJob === job.label || q) && filteredDetails.map((detail) => {
+                    const selected = selectedWorkDetails.includes(detail);
+                    return (
+                      <button
+                        key={detail}
+                        type="button"
+                        onClick={() => toggleWorkDetail(detail)}
+                        className={`w-full flex items-center justify-between pl-8 pr-4 border-b border-gray-100 transition-colors active:bg-gray-100 ${selected ? "bg-gray-50" : "bg-gray-50/60"}`}
+                        style={{ height: "44px" }}
+                      >
+                        <span className="text-sm text-gray-700">{detail}</span>
+                        {selected && <Check size={15} className="text-gray-900 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+            {customInSection.map((tag) => (
+              <div key={tag} className="flex items-center justify-between px-4 border-b border-gray-100 bg-gray-50/50" style={{ height: "48px" }}>
+                <span className="text-sm text-gray-700"># {tag}</span>
                 <button
                   type="button"
-                  onClick={() => setOpenJob(openJob === job.label ? null : job.label)}
-                  className="w-full flex items-center justify-between px-4 border-b border-gray-100 bg-white active:bg-gray-50 transition-colors"
-                  style={{ height: "48px" }}
-                >
-                  <span className="text-sm text-gray-900">{job.label}</span>
-                  {openJob === job.label
-                    ? <ChevronDown size={16} className="text-gray-400 shrink-0" />
-                    : <ChevronRight size={16} className="text-gray-400 shrink-0" />}
-                </button>
-                {openJob === job.label && job.details.map((detail) => {
-                  const selected = selectedWorkDetails.includes(detail);
-                  return (
-                    <button
-                      key={detail}
-                      type="button"
-                      onClick={() => toggleWorkDetail(detail)}
-                      className={`w-full flex items-center justify-between pl-8 pr-4 border-b border-gray-100 transition-colors active:bg-gray-100 ${selected ? "bg-gray-50" : "bg-gray-50/60"}`}
-                      style={{ height: "44px" }}
-                    >
-                      <span className="text-sm text-gray-700">{detail}</span>
-                      {selected && <Check size={15} className="text-gray-900 shrink-0" />}
-                    </button>
-                  );
-                })}
+                  onClick={() => setCustomTagsBySection((prev) => ({ ...prev, "仕事・職種": (prev["仕事・職種"] ?? []).filter((t) => t !== tag) }))}
+                  className="text-gray-400 active:opacity-60"
+                >✕</button>
               </div>
             ))}
             <div className="p-4">
@@ -315,12 +416,22 @@ export default function SettingsEditPage() {
             </div>
           </div>
         );
+      }
 
       // ── 価値観 ──
-      case "価値観":
+      case "価値観": {
+        const q = searchQuery.trim().toLowerCase();
+        const filtered = q ? VALUES_OPTIONS.filter((v) => v.toLowerCase().includes(q)) : VALUES_OPTIONS;
+        const customInSection = customTagsBySection["価値観"] ?? [];
+        const filteredCustom = q ? customInSection.filter((v) => v.toLowerCase().includes(q)) : customInSection;
         return (
           <div className="flex flex-col">
-            {VALUES_OPTIONS.map((v) => {
+            <SearchBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onAdd={(tag) => addCustomTag("価値観", tag)}
+            />
+            {filtered.map((v) => {
               const selected = profile.values.includes(v);
               return (
                 <button
@@ -338,66 +449,27 @@ export default function SettingsEditPage() {
                 </button>
               );
             })}
-            <div className="p-4">
-              <SaveButton saved={saved} isSaving={isSaving} onClick={saveSection} />
-            </div>
-          </div>
-        );
-
-      // ── カスタムタグ ──
-      case "カスタムタグ":
-        return (
-          <div className="flex flex-col">
-            {customTags.map((tag) => (
-              <div key={tag} className="flex items-center justify-between h-12 px-4 border-b border-gray-100">
-                <span className="text-sm text-gray-900"># {tag}</span>
+            {filteredCustom.map((tag) => (
+              <div key={tag} className="flex items-center justify-between px-4 border-b border-gray-100 bg-gray-50/50" style={{ height: "48px" }}>
+                <span className="text-sm text-gray-700"># {tag}</span>
                 <button
                   type="button"
-                  onClick={() => setCustomTags((t) => t.filter((t2) => t2 !== tag))}
-                  className="text-gray-400 active:opacity-60 transition-opacity"
-                >
-                  ✕
-                </button>
+                  onClick={() => setCustomTagsBySection((prev) => ({ ...prev, 価値観: (prev["価値観"] ?? []).filter((t) => t !== tag) }))}
+                  className="text-gray-400 active:opacity-60"
+                >✕</button>
               </div>
             ))}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-              <span className="text-gray-400">#</span>
-              <input
-                type="text"
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && customInput.trim()) {
-                    setCustomTags((t) => [...t, customInput.trim()]);
-                    setCustomInput("");
-                  }
-                }}
-                placeholder="タグを入力してEnter"
-                className="flex-1 text-sm text-gray-900 placeholder-gray-400 outline-none bg-transparent"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (customInput.trim()) {
-                    setCustomTags((t) => [...t, customInput.trim()]);
-                    setCustomInput("");
-                  }
-                }}
-                className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-full"
-              >
-                追加
-              </button>
-            </div>
             <div className="p-4">
               <SaveButton saved={saved} isSaving={isSaving} onClick={saveSection} />
             </div>
           </div>
         );
+      }
 
       // ── アカウント ──
       case "アカウント":
         return (
-          <div className="flex flex-col gap-0">
+          <div className="flex flex-col">
             <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
                 <Bell size={16} className="text-gray-900" />
