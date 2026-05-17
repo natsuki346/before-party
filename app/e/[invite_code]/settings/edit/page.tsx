@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Bell, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+const VALUES_OPTIONS = ["自由", "安定", "成長", "貢献", "挑戦", "つながり", "創造", "効率"];
+
 // ─── Tag categories (excluding work_context which uses WORK_CATEGORIES) ───────
 const TAG_CATEGORIES = [
   {
@@ -123,6 +125,8 @@ export default function SettingsEditPage() {
   const [activeTab, setActiveTab] = useState(ALL_TAB);
   const [workCategoryIdx, setWorkCategoryIdx] = useState(0);
   const [openJob, setOpenJob] = useState<string | null>(null);
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState("");
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,12 +144,16 @@ export default function SettingsEditPage() {
           supabase.from("participants").select("name").eq("id", participantId).single(),
           supabase.from("profiles").select("*").eq("participant_id", participantId).single(),
         ]);
+        const known = VALUES_OPTIONS;
+        const allValues = prof?.values ?? [];
+        const custom = allValues.filter((v) => !known.includes(v));
+        setCustomTags(custom);
         setProfile({
           name: participant?.name ?? "",
           life_stage: prof?.life_stage ?? "",
           work_context: prof?.work_context ?? "",
           worries: prof?.worries ?? [],
-          values: prof?.values ?? [],
+          values: allValues.filter((v) => known.includes(v)),
         });
       } catch {
         // keep empty defaults
@@ -192,7 +200,7 @@ export default function SettingsEditPage() {
         life_stage: profile.life_stage || null,
         work_context: profile.work_context || null,
         worries: profile.worries.length ? profile.worries : null,
-        values: profile.values.length ? profile.values : null,
+        values: [...profile.values, ...customTags].length ? [...profile.values, ...customTags] : null,
       });
     } catch {
       // ignore errors in demo
@@ -367,6 +375,57 @@ export default function SettingsEditPage() {
                   })}
                 </div>
               ))}
+            </div>
+
+            {/* Custom tags */}
+            <div>
+              <div className="px-5 py-2 bg-gray-50 border-b border-gray-100">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                  # カスタムタグ
+                </p>
+              </div>
+
+              {customTags.map((tag) => (
+                <div key={tag} className="flex items-center justify-between h-12 px-5 border-b border-gray-100">
+                  <span className="text-sm text-gray-900"># {tag}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomTags((t) => t.filter((t2) => t2 !== tag))}
+                    className="text-gray-400 active:opacity-60 transition-opacity"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100">
+                <span className="text-gray-400">#</span>
+                <input
+                  type="text"
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && customInput.trim()) {
+                      setCustomTags((t) => [...t, customInput.trim()]);
+                      setCustomInput("");
+                    }
+                  }}
+                  placeholder="タグを入力してEnter"
+                  className="flex-1 text-sm text-gray-900 placeholder-gray-400 outline-none bg-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customInput.trim()) {
+                      setCustomTags((t) => [...t, customInput.trim()]);
+                      setCustomInput("");
+                    }
+                  }}
+                  className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-full"
+                >
+                  追加
+                </button>
+              </div>
             </div>
 
             <div className="border-t border-gray-100" />
