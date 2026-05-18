@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Bell, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import type { Event, ParticipantWithProfile } from "@/lib/supabase/types";
 import RoomSelection from "./RoomSelection";
+import { sendLike, checkMutualLike } from "@/lib/supabase/likes";
 
 function getMatchColor(score: number, index: number, total: number): string {
   const rank = score > 0 ? score : Math.max(0, total - index) * 10;
@@ -70,6 +71,7 @@ export default function MembersList({
   const [isDragging, setIsDragging] = useState(false);
   const [view, setView] = useState<"rooms" | "tinder">("rooms");
   const [flyOut, setFlyOut] = useState<"left" | "right" | null>(null);
+  const [matchedPerson, setMatchedPerson] = useState<CardData | null>(null);
   const [eventIdx, setEventIdx] = useState(() => {
     const i = DEMO_EVENTS.findIndex((e) => e.invite_code === inviteCode);
     return i >= 0 ? i : 0;
@@ -105,8 +107,21 @@ export default function MembersList({
     setIndex(0);
   }, [myId, participants, isLoaded]);
 
+  const handleLike = async (card: CardData) => {
+    if (!myId) return;
+    try {
+      await sendLike(event.id, myId, card.id);
+      const isMutual = await checkMutualLike(event.id, myId, card.id);
+      if (isMutual) setMatchedPerson(card);
+    } catch {
+      // ignore like errors silently
+    }
+  };
+
   const swipe = (dir: "left" | "right") => {
     if (flyOut !== null || index >= cards.length) return;
+    const currentCard = cards[index];
+    if (dir === "right" && currentCard) handleLike(currentCard);
     setFlyOut(dir);
     setTimeout(() => {
       setIndex((i) => i + 1);
@@ -196,6 +211,7 @@ export default function MembersList({
   };
 
   return (
+    <>
     <main
       className="flex flex-col overflow-hidden"
       style={containerStyle}
@@ -433,5 +449,81 @@ export default function MembersList({
       {/* 60px spacer — clears the fixed bottom nav */}
       <div className="shrink-0 h-[60px]" />
     </main>
+
+    {/* Match modal */}
+    {matchedPerson && (
+      <div
+        className="fixed inset-0 z-[70] flex items-center justify-center"
+        style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", background: "rgba(0,0,0,0.45)" }}
+      >
+        <div
+          style={{
+            width: "calc(390px - 48px)",
+            background: "linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 100%)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderRadius: "28px",
+            borderTop: "2px solid rgba(255,255,255,0.9)",
+            borderRight: "1px solid rgba(255,255,255,0.5)",
+            borderBottom: "1px solid rgba(255,255,255,0.2)",
+            borderLeft: "1px solid rgba(255,255,255,0.5)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+            padding: "32px 24px 24px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 16,
+            animation: "matchIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both",
+          }}
+        >
+          <style>{`@keyframes matchIn { from { opacity:0; transform:scale(0.7); } to { opacity:1; transform:scale(1); } }`}</style>
+          <div style={{ fontSize: 48 }}>🎉</div>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 22, fontWeight: 800, color: "#111827", marginBottom: 6 }}>
+              マッチしました！
+            </p>
+            <p style={{ fontSize: 15, color: "#374151" }}>
+              <span style={{ fontWeight: 700 }}>{matchedPerson.name}</span> さんと
+              つながりました
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 8 }}>
+            <Link
+              href={`/e/${inviteCode}/chats`}
+              onClick={() => setMatchedPerson(null)}
+              style={{
+                display: "block",
+                textAlign: "center",
+                background: "#111827",
+                color: "white",
+                borderRadius: 999,
+                padding: "13px 0",
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              チャットを始める
+            </Link>
+            <button
+              onClick={() => setMatchedPerson(null)}
+              style={{
+                background: "rgba(0,0,0,0.08)",
+                border: "none",
+                borderRadius: 999,
+                padding: "12px 0",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#374151",
+                cursor: "pointer",
+              }}
+            >
+              続けてスワイプ
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
