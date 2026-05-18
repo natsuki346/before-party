@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getConnectionCount } from "@/lib/supabase/likes";
 
 type ProfileData = {
   name: string;
@@ -23,6 +24,7 @@ export default function SettingsPage() {
     : (params.invite_code ?? "");
 
   const [profile, setProfile] = useState<ProfileData>(EMPTY);
+  const [connectionCount, setConnectionCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,9 +36,10 @@ export default function SettingsPage() {
       }
       try {
         const supabase = createClient();
-        const [{ data: participant }, { data: prof }] = await Promise.all([
+        const [{ data: participant }, { data: prof }, eventRes] = await Promise.all([
           supabase.from("participants").select("name").eq("id", participantId).single(),
           supabase.from("profiles").select("*").eq("participant_id", participantId).single(),
+          supabase.from("participants").select("event_id").eq("id", participantId).single(),
         ]);
         setProfile({
           name: participant?.name ?? "",
@@ -45,6 +48,10 @@ export default function SettingsPage() {
           worries: prof?.worries ?? [],
           values: prof?.values ?? [],
         });
+        if (eventRes.data?.event_id) {
+          const count = await getConnectionCount(participantId, eventRes.data.event_id);
+          setConnectionCount(count);
+        }
       } catch {
         // keep empty defaults
       }
@@ -96,7 +103,7 @@ export default function SettingsPage() {
 
             {/* Profile info */}
             <div className="px-4 pt-3 pb-6 flex flex-col gap-5">
-              {/* Name + work_context */}
+              {/* Name + work_context + connection count */}
               <div className="flex flex-col gap-1.5">
                 <h2 className="text-lg font-bold text-gray-900 leading-snug">
                   {profile.name || "名前未設定"}
@@ -104,6 +111,12 @@ export default function SettingsPage() {
                 <p className="text-sm text-gray-900 leading-relaxed">
                   {profile.work_context || "仕事・活動内容未設定"}
                 </p>
+                {connectionCount !== null && (
+                  <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                    <span>🔗</span>
+                    <span>{connectionCount}人とつながり中</span>
+                  </p>
+                )}
               </div>
 
               <div className="border-t border-gray-100" />
