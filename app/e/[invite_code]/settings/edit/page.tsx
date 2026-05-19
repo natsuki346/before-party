@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Bell, Check, ChevronDown, ChevronRight } from "lucide-react";
@@ -110,10 +110,34 @@ function SearchBar({
   setSearchQuery: (v: string) => void;
   onAdd: (tag: string) => void;
 }) {
-  // Stable dummy count based on query string (avoids random flicker on re-render)
-  const dummyCount = searchQuery.trim()
-    ? (searchQuery.trim().length * 7 % 29) + 1
-    : 0;
+  const [tagCount, setTagCount] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setTagCount(null);
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        const [vRes, wRes] = await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact", head: true }).contains("values", [trimmed]),
+          supabase.from("profiles").select("id", { count: "exact", head: true }).contains("worries", [trimmed]),
+        ]);
+        setTagCount((vRes.count ?? 0) + (wRes.count ?? 0));
+      } catch {
+        setTagCount(null);
+      }
+      setIsLoading(false);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery]);
 
   return (
     <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6" }}>
@@ -137,7 +161,12 @@ function SearchBar({
       </div>
       {searchQuery.trim() && (
         <div style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
-          「{searchQuery.trim()}」を追加中の人: {dummyCount}人
+          {isLoading
+            ? "検索中..."
+            : tagCount !== null && tagCount > 0
+              ? `「${searchQuery.trim()}」を追加中の人: ${tagCount}人`
+              : null
+          }
           <button
             onClick={() => { onAdd(searchQuery.trim()); setSearchQuery(""); }}
             style={{ marginLeft: 8, fontSize: 12, color: "#111827", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
