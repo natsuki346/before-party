@@ -162,6 +162,10 @@ export default function MembersList({
   const card = cards[index];
   const nextCard = cards[index + 1];
 
+  // life_stage(20) + 6×worries(15) + 6×values(15) = 200
+  const SCORE_MAX = 200;
+  const scorePercent = Math.min(100, Math.round((card.score / SCORE_MAX) * 100));
+
   const containerStyle: React.CSSProperties = {
     maxWidth: "390px",
     margin: "0 auto",
@@ -341,14 +345,14 @@ export default function MembersList({
                 </span>
               </div>
 
-              {/* Match score — dummy 85% */}
+              {/* Match score */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[11px] text-gray-500 font-medium">マッチ度</span>
-                  <span className="text-[11px] font-bold" style={{ color: matchColor }}>85%</span>
+                  <span className="text-[11px] font-bold" style={{ color: matchColor }}>{scorePercent}%</span>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full" style={{ width: "85%", background: `linear-gradient(90deg, ${matchColor}, ${matchColor}aa)`, boxShadow: `0 0 8px ${matchColor}66`, borderRadius: "4px" }} />
+                  <div className="h-full" style={{ width: `${scorePercent}%`, background: `linear-gradient(90deg, ${matchColor}, ${matchColor}aa)`, boxShadow: `0 0 8px ${matchColor}66`, borderRadius: "4px" }} />
                 </div>
               </div>
 
