@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Hash, Plus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -50,9 +50,29 @@ export default function ChannelList({
   const [parentTab, setParentTab]   = useState<ParentTab>("default");
   const [activeTab, setActiveTab]   = useState<CategoryTab>("すべて");
   const [extraRooms, setExtraRooms] = useState<Room[]>(userRooms);
+  const [roomCounts, setRoomCounts] = useState<Record<string, number>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [roomName, setRoomName]     = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  // Fetch participant counts for real rooms from room_participants
+  useEffect(() => {
+    if (userRooms.length === 0) return;
+    const roomIds = userRooms.map((r) => r.id);
+    const supabase = createClient();
+    supabase
+      .from("room_participants")
+      .select("room_id")
+      .in("room_id", roomIds)
+      .then(({ data }) => {
+        if (!data) return;
+        const counts: Record<string, number> = {};
+        for (const row of data) {
+          counts[row.room_id] = (counts[row.room_id] ?? 0) + 1;
+        }
+        setRoomCounts(counts);
+      });
+  }, [userRooms]);
 
   const visiblePresets =
     activeTab === "すべて"
@@ -192,7 +212,7 @@ export default function ChannelList({
                   <Hash size={15} className="text-gray-400 shrink-0" />
                   <span className="text-sm text-gray-800 flex-1">{room.name}</span>
                   <span className="flex items-center gap-1 text-[11px] text-gray-400 shrink-0">
-                    <Users size={11} />1
+                    <Users size={11} />{roomCounts[room.id] ?? 0}
                   </span>
                 </Link>
               ))
