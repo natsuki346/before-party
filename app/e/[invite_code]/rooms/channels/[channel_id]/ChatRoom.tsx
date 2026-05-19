@@ -150,8 +150,7 @@ export default function ChatRoom({
     const participantId = localStorage.getItem(`participant_${inviteCode}`);
     const name = localStorage.getItem(`chat_name_${inviteCode}`) || "ゲスト";
     const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any).from("room_participants").upsert({
+    supabase.from("room_participants").upsert({
       room_id: room.id,
       participant_id: participantId || null,
       display_name: name,
@@ -165,8 +164,7 @@ export default function ChatRoom({
       return;
     }
     const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("room_participants")
       .select(`
         display_name,
@@ -178,8 +176,8 @@ export default function ChatRoom({
         )
       `)
       .eq("room_id", room.id)
-      .then(({ data }: { data: any[] | null }) => {
-        if (data) setMembers(data);
+      .then(({ data }) => {
+        if (data) setMembers(data as any[]);
       });
   }, [showMembers, room.id, isDummy]);
 

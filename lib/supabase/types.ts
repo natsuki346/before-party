@@ -198,6 +198,45 @@ export type Database = {
           }
         ];
       };
+      room_participants: {
+        Row: {
+          id: string;
+          room_id: string;
+          participant_id: string | null;
+          display_name: string;
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          participant_id?: string | null;
+          display_name: string;
+          joined_at?: string;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          participant_id?: string | null;
+          display_name?: string;
+          joined_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "room_participants_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "room_participants_participant_id_fkey";
+            columns: ["participant_id"];
+            isOneToOne: false;
+            referencedRelation: "participants";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       likes: {
         Row: {
           id: string;
@@ -292,4 +331,5 @@ export type Message = Database["public"]["Tables"]["messages"]["Row"];
 export type Room = Database["public"]["Tables"]["rooms"]["Row"];
 export type RoomMessage = Database["public"]["Tables"]["room_messages"]["Row"];
 export type Like = Database["public"]["Tables"]["likes"]["Row"];
+export type RoomParticipant = Database["public"]["Tables"]["room_participants"]["Row"];
 export type ParticipantWithProfile = Participant & { profiles: Profile | null };
