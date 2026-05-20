@@ -3,16 +3,46 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Send, Image, Mic } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { DirectMessage } from "@/lib/supabase/types";
 
-type Message = { id: string; sender: "me" | "other"; content: string; time: string };
+const COLORS = ["#4A90D9", "#7B61FF", "#E05C5C", "#27AE60", "#F39C12", "#8E44AD"];
 
-function now() {
-  return new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+function nameColor(name: string): string {
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) sum += name.charCodeAt(i);
+  return COLORS[sum % COLORS.length];
 }
 
-function MessageBubble({ msg, color, initial }: { msg: Message; color: string; initial: string }) {
-  const isMine = msg.sender === "me";
+function toTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+}
 
+type UiMessage = {
+  id: string;
+  content: string;
+  isMine: boolean;
+  time: string;
+};
+
+function dbToUi(msg: DirectMessage, myId: string): UiMessage {
+  return {
+    id: msg.id,
+    content: msg.content,
+    isMine: msg.from_participant_id === myId,
+    time: toTime(msg.created_at),
+  };
+}
+
+function MessageBubble({
+  msg,
+  color,
+  initial,
+}: {
+  msg: UiMessage;
+  color: string;
+  initial: string;
+}) {
   const renderContent = () => {
     if (msg.content.startsWith("__image__")) {
       const src = msg.content.replace("__image__", "");
@@ -24,7 +54,6 @@ function MessageBubble({ msg, color, initial }: { msg: Message; color: string; i
         />
       );
     }
-
     if (msg.content.startsWith("__voice__")) {
       const parts = msg.content.split("__").filter(Boolean);
       const url = parts[1];
@@ -32,24 +61,23 @@ function MessageBubble({ msg, color, initial }: { msg: Message; color: string; i
       return (
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
-          background: isMine ? "black" : "white", borderRadius: 20,
+          background: msg.isMine ? "black" : "white", borderRadius: 20,
         }}>
           <button
             onClick={() => { const a = new Audio(url); a.play(); }}
-            style={{ background: "none", border: "none", cursor: "pointer", color: isMine ? "white" : "black", fontSize: 16 }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: msg.isMine ? "white" : "black", fontSize: 16 }}
           >
             ▶
           </button>
-          <div style={{ flex: 1, height: 3, background: isMine ? "rgba(255,255,255,0.4)" : "#e5e7eb", borderRadius: 2 }} />
-          <span style={{ fontSize: 11, color: isMine ? "rgba(255,255,255,0.7)" : "#9ca3af" }}>{sec}秒</span>
+          <div style={{ flex: 1, height: 3, background: msg.isMine ? "rgba(255,255,255,0.4)" : "#e5e7eb", borderRadius: 2 }} />
+          <span style={{ fontSize: 11, color: msg.isMine ? "rgba(255,255,255,0.7)" : "#9ca3af" }}>{sec}秒</span>
         </div>
       );
     }
-
     return msg.content;
   };
 
-  if (isMine) {
+  if (msg.isMine) {
     return (
       <div className="flex flex-col items-end gap-0.5">
         <div className="max-w-[78%] bg-black text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-sm leading-relaxed overflow-hidden">
@@ -79,20 +107,20 @@ function MessageBubble({ msg, color, initial }: { msg: Message; color: string; i
 }
 
 export default function ChatRoom({
-  name,
-  initial,
-  color,
-  initialMessages,
+  otherParticipantId,
+  otherParticipantName,
   inviteCode,
 }: {
-  name: string;
-  initial: string;
-  color: string;
-  initialMessages: Message[];
+  otherParticipantId: string;
+  otherParticipantName: string;
   inviteCode: string;
 }) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<UiMessage[]>([]);
   const [input, setInput] = useState("");
+  const [myId, setMyId] = useState<string | null>(null);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -101,33 +129,132 @@ export default function ChatRoom({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const color = nameColor(otherParticipantName);
+  const initial = otherParticipantName[0] ?? "?";
+
+  // Initial load: resolve participantId, eventId, history
+  useEffect(() => {
+    (async () => {
+      const pId = localStorage.getItem(`participant_${inviteCode}`);
+      if (!pId) {
+        setIsLoading(false);
+        return;
+      }
+      setMyId(pId);
+
+      const supabase = createClient();
+      const { data: event } = await supabase
+        .from("events")
+        .select("id")
+        .eq("invite_code", inviteCode)
+        .single();
+      if (!event) {
+        setIsLoading(false);
+        return;
+      }
+      setEventId(event.id);
+
+      const convId = [pId, otherParticipantId].sort().join("|");
+      const { data: msgs } = await supabase
+        .from("direct_messages")
+        .select("*")
+        .eq("conversation_id", convId)
+        .order("created_at", { ascending: true });
+
+      if (msgs) {
+        setMessages(msgs.map((m) => dbToUi(m as DirectMessage, pId)));
+      }
+      setIsLoading(false);
+    })();
+  }, [inviteCode, otherParticipantId]);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Cleanup timer on unmount
+  // Realtime: receive messages from the other person
+  useEffect(() => {
+    if (!myId) return;
+    const convId = [myId, otherParticipantId].sort().join("|");
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`dm:${convId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "direct_messages",
+          filter: `conversation_id=eq.${convId}`,
+        },
+        (payload) => {
+          const msg = payload.new as DirectMessage;
+          // Own messages are already shown optimistically
+          if (msg.from_participant_id === myId) return;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, dbToUi(msg, myId)];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [myId, otherParticipantId]);
+
+  // Cleanup recording timer on unmount
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || isSending || !myId || !eventId) return;
+    setIsSending(true);
+    setInput("");
+
+    const optimisticId = `opt-${Date.now()}`;
+    const now = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
     setMessages((prev) => [
       ...prev,
-      { id: `local-${Date.now()}`, sender: "me", content: text, time: now() },
+      { id: optimisticId, content: text, isMine: true, time: now },
     ]);
-    setInput("");
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("direct_messages")
+      .insert({
+        event_id: eventId,
+        from_participant_id: myId,
+        to_participant_id: otherParticipantId,
+        content: text,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      setInput(text);
+    } else if (data) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimisticId ? dbToUi(data as DirectMessage, myId) : m))
+      );
+    }
+
+    setIsSending(false);
     inputRef.current?.focus();
   };
 
+  // Image/voice: local only (not persisted, blob URLs can't be stored in DB)
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
+    const time = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
     setMessages((prev) => [
       ...prev,
-      { id: `img-${Date.now()}`, sender: "me", content: `__image__${url}`, time: now() },
+      { id: `img-${Date.now()}`, isMine: true, content: `__image__${url}`, time },
     ]);
     e.target.value = "";
   };
@@ -141,9 +268,10 @@ export default function ChatRoom({
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: "audio/webm" });
         const url = URL.createObjectURL(blob);
+        const time = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
         setMessages((prev) => [
           ...prev,
-          { id: `voice-${Date.now()}`, sender: "me", content: `__voice__${url}__${recordingTime}`, time: now() },
+          { id: `voice-${Date.now()}`, isMine: true, content: `__voice__${url}__${recordingTime}`, time },
         ]);
         stream.getTracks().forEach((t) => t.stop());
       };
@@ -184,14 +312,22 @@ export default function ChatRoom({
         >
           {initial}
         </div>
-        <h1 className="text-sm font-bold text-gray-900 truncate">{name}</h1>
+        <h1 className="text-sm font-bold text-gray-900 truncate">{otherParticipantName}</h1>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} msg={msg} color={color} initial={initial} />
-        ))}
+        {isLoading ? (
+          <p className="text-center text-xs text-gray-400 mt-10">読み込み中...</p>
+        ) : messages.length === 0 ? (
+          <p className="text-center text-xs text-gray-400 mt-10">
+            まだメッセージがありません。<br />最初の一言を送ってみましょう！
+          </p>
+        ) : (
+          messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} color={color} initial={initial} />
+          ))
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -206,7 +342,6 @@ export default function ChatRoom({
 
       {/* Input area */}
       <div className="shrink-0 bg-white border-t border-gray-100 px-3 py-2.5 flex items-center gap-2">
-        {/* Image button */}
         <button
           onClick={() => fileInputRef.current?.click()}
           className="p-2 text-gray-400 hover:text-gray-600 active:opacity-70 transition-opacity shrink-0"
@@ -215,7 +350,6 @@ export default function ChatRoom({
           <Image size={20} />
         </button>
 
-        {/* Text input or recording indicator */}
         {isRecording ? (
           <div style={{
             flex: 1, display: "flex", alignItems: "center", gap: 8,
@@ -239,11 +373,11 @@ export default function ChatRoom({
           />
         )}
 
-        {/* Send or mic button */}
         {input.trim() ? (
           <button
             onClick={send}
-            className="w-9 h-9 bg-black rounded-full flex items-center justify-center shrink-0 active:opacity-70 transition-opacity"
+            disabled={isSending}
+            className="w-9 h-9 bg-black rounded-full flex items-center justify-center shrink-0 disabled:opacity-30 active:opacity-70 transition-opacity"
             aria-label="送信"
           >
             <Send size={14} className="text-white" strokeWidth={2.5} />
