@@ -315,6 +315,56 @@ export type Database = {
           }
         ];
       };
+      direct_messages: {
+        Row: {
+          id: string;
+          event_id: string;
+          from_participant_id: string;
+          to_participant_id: string;
+          content: string;
+          conversation_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          from_participant_id: string;
+          to_participant_id: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          from_participant_id?: string;
+          to_participant_id?: string;
+          content?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "direct_messages_from_participant_id_fkey";
+            columns: ["from_participant_id"];
+            isOneToOne: false;
+            referencedRelation: "participants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "direct_messages_to_participant_id_fkey";
+            columns: ["to_participant_id"];
+            isOneToOne: false;
+            referencedRelation: "participants";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -332,4 +382,5 @@ export type Room = Database["public"]["Tables"]["rooms"]["Row"];
 export type RoomMessage = Database["public"]["Tables"]["room_messages"]["Row"];
 export type Like = Database["public"]["Tables"]["likes"]["Row"];
 export type RoomParticipant = Database["public"]["Tables"]["room_participants"]["Row"];
+export type DirectMessage = Database["public"]["Tables"]["direct_messages"]["Row"];
 export type ParticipantWithProfile = Participant & { profiles: Profile | null };
