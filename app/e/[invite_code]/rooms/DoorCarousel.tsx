@@ -1,33 +1,67 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type EventData = {
+type EventItem = {
+  inviteCode: string;
   title: string;
   date: string;
   participantCount: number;
 };
 
-function Door({ data, onClick }: { data: EventData | null; onClick: () => void }) {
+const SWIPE_THRESH = 50;
+
+type Role = "main" | "prev" | "next" | "hidden-above" | "hidden-below";
+
+function getRoleStyle(role: Role): React.CSSProperties {
+  const base: React.CSSProperties = { position: "absolute", transition: "all 0.45s ease" };
+  switch (role) {
+    case "main":
+      return { ...base, left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: 180, height: 260, opacity: 1, zIndex: 10 };
+    case "prev":
+      return { ...base, left: "5%", top: "8%", transform: "translate(0, 0)", width: 90, height: 130, opacity: 0.45, zIndex: 5 };
+    case "next":
+      return { ...base, left: "5%", top: "calc(88% - 130px)", transform: "translate(0, 0)", width: 90, height: 130, opacity: 0.45, zIndex: 5 };
+    case "hidden-above":
+      return { ...base, left: "5%", top: "-28%", transform: "translate(0, 0)", width: 90, height: 130, opacity: 0, zIndex: 1, pointerEvents: "none" };
+    case "hidden-below":
+      return { ...base, left: "5%", top: "calc(118% - 130px)", transform: "translate(0, 0)", width: 90, height: 130, opacity: 0, zIndex: 1, pointerEvents: "none" };
+  }
+}
+
+function getRole(i: number, activeIdx: number, N: number): Role {
+  let diff = ((i - activeIdx) % N + N) % N;
+  if (diff > N / 2) diff -= N;
+  if (diff === 0)  return "main";
+  if (diff === -1) return "prev";
+  if (diff === 1)  return "next";
+  return diff < 0 ? "hidden-above" : "hidden-below";
+}
+
+function Door({ event, isMain }: { event: EventItem; isMain: boolean }) {
+  const sz = {
+    name:  isMain ? "16px" : "10px",
+    date:  isMain ? "10px" : "7.5px",
+    count: isMain ? "11px" : "8px",
+    knob:  isMain ? 12 : 7,
+    knobR: isMain ? "8px" : "5px",
+    padX:  isMain ? "14px" : "8px",
+  };
+
   return (
     <div
-      onClick={onClick}
       style={{
-        width: 180,
-        height: 260,
-        position: "absolute",
-        left: "50%",
-        top: "50%",
-        transform: "translate(-50%, -50%)",
+        width: "100%",
+        height: "100%",
         backgroundColor: "#3d1f00",
         borderRadius: "8px",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
+        position: "relative",
         boxShadow: "0 0 15px rgba(212,160,23,0.4)",
-        cursor: "pointer",
       }}
     >
       {/* Top half — event name */}
@@ -37,20 +71,12 @@ function Door({ data, onClick }: { data: EventData | null; onClick: () => void }
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "8px 14px 4px",
+          padding: `8px ${sz.padX} 4px`,
           borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}
       >
-        <p
-          style={{
-            color: "rgba(255,255,255,0.93)",
-            fontSize: "16px",
-            fontWeight: "700",
-            textAlign: "center",
-            lineHeight: 1.3,
-          }}
-        >
-          {data?.title ?? "読み込み中..."}
+        <p style={{ color: "rgba(255,255,255,0.93)", fontSize: sz.name, fontWeight: "700", textAlign: "center", lineHeight: 1.3 }}>
+          {event.title}
         </p>
       </div>
 
@@ -62,30 +88,28 @@ function Door({ data, onClick }: { data: EventData | null; onClick: () => void }
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: "5px",
-          paddingLeft: "14px",
-          paddingRight: "calc(12px + 8px + 4px)",
+          gap: isMain ? "5px" : "2px",
+          paddingLeft: sz.padX,
+          paddingRight: `calc(${sz.knob}px + ${sz.knobR} + 4px)`,
         }}
       >
-        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "10px", textAlign: "center" }}>
-          {data?.date ?? ""}
+        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: sz.date, textAlign: "center" }}>
+          {event.date}
         </p>
-        {data && (
-          <p style={{ color: "#d4a017", fontSize: "11px", fontWeight: "600" }}>
-            {data.participantCount}人が待っています
-          </p>
-        )}
+        <p style={{ color: "#d4a017", fontSize: sz.count, fontWeight: "600" }}>
+          {event.participantCount}人が待っています
+        </p>
       </div>
 
       {/* Doorknob */}
       <div
         style={{
           position: "absolute",
-          right: "8px",
+          right: sz.knobR,
           top: "50%",
           transform: "translateY(-50%)",
-          width: "12px",
-          height: "12px",
+          width: `${sz.knob}px`,
+          height: `${sz.knob}px`,
           borderRadius: "50%",
           backgroundColor: "#d4a017",
           boxShadow: "0 1px 3px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.3)",
@@ -97,39 +121,84 @@ function Door({ data, onClick }: { data: EventData | null; onClick: () => void }
 
 export default function DoorCarousel({ currentInviteCode }: { currentInviteCode: string }) {
   const router = useRouter();
-  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [index, setIndex] = useState(0);
+
+  const touchStartY = useRef(0);
+  const mouseStartY = useRef(0);
+  const isMouseDown = useRef(false);
 
   useEffect(() => {
     (async () => {
       const supabase = createClient();
 
-      const { data: event } = await supabase
+      const { data: rawEvents } = await supabase
         .from("events")
-        .select("id, title, event_date")
-        .eq("invite_code", currentInviteCode)
-        .single();
+        .select("id, invite_code, title, event_date")
+        .order("event_date", { ascending: true });
 
-      if (!event) return;
+      if (!rawEvents || rawEvents.length === 0) return;
 
-      const { count } = await supabase
+      // Batch-fetch all participant records and count client-side
+      const { data: allParticipants } = await supabase
         .from("participants")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", event.id);
+        .select("event_id")
+        .in("event_id", rawEvents.map((e) => e.id));
 
-      const date = new Date(event.event_date).toLocaleDateString("ja-JP", {
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const countMap: Record<string, number> = {};
+      for (const p of allParticipants ?? []) {
+        countMap[p.event_id] = (countMap[p.event_id] ?? 0) + 1;
+      }
 
-      setEventData({
-        title: event.title,
-        date,
-        participantCount: count ?? 0,
-      });
+      const items: EventItem[] = rawEvents.map((e) => ({
+        inviteCode: e.invite_code,
+        title: e.title,
+        date: new Date(e.event_date).toLocaleDateString("ja-JP", {
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        participantCount: countMap[e.id] ?? 0,
+      }));
+
+      setEvents(items);
+
+      const currentIdx = items.findIndex((e) => e.inviteCode === currentInviteCode);
+      setIndex(Math.max(0, currentIdx));
     })();
   }, [currentInviteCode]);
+
+  const N = events.length;
+
+  // Touch
+  const onTouchStart = (e: React.TouchEvent) => { touchStartY.current = e.touches[0].clientY; };
+  const onTouchEnd   = (e: React.TouchEvent) => {
+    const d = e.changedTouches[0].clientY - touchStartY.current;
+    if      (d < -SWIPE_THRESH) setIndex((i) => (i + 1) % N);
+    else if (d >  SWIPE_THRESH) setIndex((i) => (i - 1 + N) % N);
+  };
+
+  // Mouse (PC)
+  const onMouseDown  = (e: React.MouseEvent) => { isMouseDown.current = true; mouseStartY.current = e.clientY; };
+  const onMouseUp    = (e: React.MouseEvent) => {
+    if (!isMouseDown.current) return;
+    isMouseDown.current = false;
+    const d = e.clientY - mouseStartY.current;
+    if      (d < -SWIPE_THRESH) setIndex((i) => (i + 1) % N);
+    else if (d >  SWIPE_THRESH) setIndex((i) => (i - 1 + N) % N);
+  };
+  const onMouseLeave = () => { isMouseDown.current = false; };
+
+  const handleClick = (event: EventItem, role: Role) => {
+    if (role === "main") {
+      router.push(`/e/${event.inviteCode}/rooms/channels`);
+    } else if (role === "prev") {
+      setIndex((i) => (i - 1 + N) % N);
+    } else if (role === "next") {
+      setIndex((i) => (i + 1) % N);
+    }
+  };
 
   return (
     <main
@@ -142,11 +211,27 @@ export default function DoorCarousel({ currentInviteCode }: { currentInviteCode:
         overflow: "hidden",
         backgroundColor: "#f5f0eb",
       }}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseLeave}
     >
-      <Door
-        data={eventData}
-        onClick={() => router.push(`/e/${currentInviteCode}/rooms/channels`)}
-      />
+      {events.map((event, i) => {
+        const role = getRole(i, index, N);
+        return (
+          <div
+            key={event.inviteCode}
+            style={{
+              ...getRoleStyle(role),
+              cursor: role === "main" || role === "prev" || role === "next" ? "pointer" : "default",
+            }}
+            onClick={() => handleClick(event, role)}
+          >
+            <Door event={event} isMain={role === "main"} />
+          </div>
+        );
+      })}
 
       <p
         style={{
@@ -162,7 +247,7 @@ export default function DoorCarousel({ currentInviteCode }: { currentInviteCode:
           pointerEvents: "none",
         }}
       >
-        タップして入る
+        スワイプで切り替え・タップして入る
       </p>
     </main>
   );
